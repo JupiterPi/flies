@@ -1,7 +1,7 @@
 import { HeadContent, Outlet, createRootRoute } from "@tanstack/react-router";
-
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { TanStackDevtools } from "@tanstack/react-devtools";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import "../styles.css";
 import { ThemeProvider } from "#/components/theme-provider";
@@ -15,14 +15,18 @@ export const Route = createRootRoute({
   component: RootComponent,
 });
 
+const queryClient = new QueryClient();
+
 function RootComponent() {
   return (
     <>
       <HeadContent />
-      <ThemeProvider>
-        <Navbar navigationData={[]} />
-        <Outlet />
-      </ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <Navbar navigationData={[]} />
+          <Outlet />
+        </ThemeProvider>
+      </QueryClientProvider>
       <TanStackDevtools
         config={{
           position: "bottom-right",

@@ -9,7 +9,7 @@ import { Input } from "#/components/ui/input";
 import { Textarea } from "#/components/ui/textarea";
 import {
   FliesConfiguration,
-  readConfigurationFromLocalStorage,
+  readConfigurationFromLocalStorageUnvalidated,
   readDeviceNameFromLocalStorage,
   writeConfigurationToLocalStorage,
   writeDeviceNameToLocalStorage,
@@ -18,6 +18,7 @@ import { useTemporaryState } from "#/lib/utils";
 import { IconCheck } from "@tabler/icons-react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import z from "zod";
 
 export const Route = createFileRoute("/config")({
   component: RouteComponent,
@@ -42,7 +43,7 @@ const exampleConfig: FliesConfiguration = {
         {
           extension: ".txt",
           icon: "text-icon",
-          application: "Text Editor",
+          viewer: "text",
         },
       ],
     },
@@ -51,7 +52,7 @@ const exampleConfig: FliesConfiguration = {
     {
       extension: ".jpg",
       icon: "image-icon",
-      application: "Image Viewer",
+      viewer: "default",
     },
   ],
 };
@@ -61,19 +62,19 @@ function RouteComponent() {
 
   // read and save configuration
   const [configInput, setConfigInput] = useState(
-    JSON.stringify(readConfigurationFromLocalStorage(), null, 2),
+    JSON.stringify(readConfigurationFromLocalStorageUnvalidated(), null, 2),
   );
   const [configError, setConfigError] = useState<string | null>(null);
   useEffect(() => {
     try {
       const parsed = JSON.parse(configInput);
       setConfigError(null);
-      try {
-        const validated = FliesConfiguration.parse(parsed);
-        writeConfigurationToLocalStorage(validated);
+      const validated = FliesConfiguration.safeParse(parsed);
+      if (validated.success) {
+        writeConfigurationToLocalStorage(validated.data);
         setSaved(true);
-      } catch (err) {
-        setConfigError("Invalid configuration according to schema");
+      } else {
+        setConfigError(z.prettifyError(validated.error));
       }
     } catch (err) {
       setConfigError("Invalid JSON");
@@ -122,7 +123,7 @@ function RouteComponent() {
           onChange={(e) => setConfigInput(e.target.value)}
           aria-invalid={configError !== null}
         />
-        <FieldDescription className="text-destructive">
+        <FieldDescription className="text-destructive whitespace-pre-wrap">
           {configError}
         </FieldDescription>
         <div className="flex justify-end">
