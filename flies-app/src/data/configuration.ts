@@ -37,12 +37,12 @@ export const FliesConfiguration = z.object({
 });
 export type FliesConfiguration = z.infer<typeof FliesConfiguration>;
 
+export const fliesConfigurationSchema = FliesConfiguration.toJSONSchema();
+
 // store
 
-const LOCAL_STORAGE_KEY = "flies-configuration";
-
 export function readConfigurationFromLocalStorage(): FliesConfiguration {
-  const configString = localStorage.getItem(LOCAL_STORAGE_KEY);
+  const configString = localStorage.getItem("flies-configuration");
   if (!configString) {
     return FliesConfiguration.parse({});
   }
@@ -56,5 +56,13 @@ export function readConfigurationFromLocalStorage(): FliesConfiguration {
 }
 
 export function writeConfigurationToLocalStorage(config: FliesConfiguration) {
-  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(config));
+  localStorage.setItem("flies-configuration", JSON.stringify(config));
+}
+
+export function readDeviceNameFromLocalStorage(): string | null {
+  return localStorage.getItem("flies-device-name");
+}
+
+export function writeDeviceNameToLocalStorage(name: string) {
+  localStorage.setItem("flies-device-name", name);
 }

@@ -4,6 +4,8 @@ import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 
 import "../styles.css";
+import { ThemeProvider } from "#/components/theme-provider";
+import Navbar from "#/components/navbar";
 
 export const Route = createRootRoute({
   head: () => ({
@@ -17,7 +19,10 @@ function RootComponent() {
   return (
     <>
       <HeadContent />
-      <Outlet />
+      <ThemeProvider>
+        <Navbar navigationData={[]} />
+        <Outlet />
+      </ThemeProvider>
       <TanStackDevtools
         config={{
           position: "bottom-right",
