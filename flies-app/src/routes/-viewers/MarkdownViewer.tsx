@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { LoadingPage, PathBreadcrumbs, type ViewerInfo } from "../$";
+import { LoadingPage, PathBreadcrumbs, useFs } from "../$";
 import classNames from "classnames";
 
 import { Milkdown, MilkdownProvider, useEditor } from "@milkdown/react";
@@ -11,11 +11,12 @@ import { useDebounce } from "@uidotdev/usehooks";
 import { useEffect, useState } from "react";
 import { IconCloudCheck, IconCloudUpload } from "@tabler/icons-react";
 
-export default function MarkdownViewer({ client, root, path }: ViewerInfo) {
+export default function MarkdownViewer({ path }: { path: string }) {
+  const fs = useFs();
+
   const content = useQuery({
-    queryKey: ["text-file-content", root.id, path],
-    queryFn: () =>
-      client.getFileContents(path) as unknown as ArrayBuffer | String,
+    queryKey: ["text-file-content", fs.getRoot().id, path],
+    queryFn: () => fs.readFile(path),
   });
 
   const [markdownInput, setMarkdownInput] = useState<string | null>(null);
@@ -26,7 +27,7 @@ export default function MarkdownViewer({ client, root, path }: ViewerInfo) {
   useEffect(() => {
     if (debouncedMarkdownInput !== null && saveStatus !== "saving") {
       setSaveStatus("saving");
-      client.putFileContents(path, debouncedMarkdownInput).then(() => {
+      fs.writeFile(path, debouncedMarkdownInput).then(() => {
         setSaveStatus("saved");
       });
     }
@@ -52,7 +53,7 @@ export default function MarkdownViewer({ client, root, path }: ViewerInfo) {
     <MilkdownProvider>
       {/* status bar */}
       <div className="mt-8 ml-[60px] flex gap-4 items-center">
-        <PathBreadcrumbs root={root} path={path} />
+        <PathBreadcrumbs root={fs.getRoot()} path={path} />
         {(saveStatus === "idle" || saveStatus === "saved") && (
           <IconCloudCheck
             className={classNames(

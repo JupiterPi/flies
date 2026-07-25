@@ -5,8 +5,6 @@ import {
 } from "#/data/configuration";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
-import { createClient, type FileStat, type WebDAVClient } from "webdav";
 import TextViewer from "./-viewers/TextViewer";
 import DirectoryViewer from "./-viewers/DirectoryViewer";
 import { IconLoader } from "@tabler/icons-react";
@@ -18,6 +16,8 @@ import {
   BreadcrumbList,
   BreadcrumbSeparator,
 } from "#/components/ui/breadcrumb";
+import { WebDAVClientFS, type RemoteFileSystem } from "#/fs/fs";
+import { createContext, useContext } from "react";
 
 export const Route = createFileRoute("/$")({
   component: RouteComponent,
@@ -37,21 +37,38 @@ function RouteComponent() {
   }
   const remotePath = path.substring(root.id.length + 1);
 
-  const [client, _] = useState(() =>
-    createClient(
-      root.webdavEndpoint,
-      root.webdavCredentials
-        ? {
-            username: root.webdavCredentials.username,
-            password: root.webdavCredentials.password,
-          }
-        : undefined,
-    ),
+  const fs = new WebDAVClientFS(root);
+  return (
+    <FsContext value={fs}>
+      <FileAssociationRouter path={remotePath} configuration={configuration} />
+    </FsContext>
   );
+}
+
+export const FsContext = createContext<RemoteFileSystem | null>(null);
+
+export function useFs() {
+  const fs = useContext(FsContext);
+  if (!fs) {
+    throw new Error("useFs must be used within a FsContext.Provider");
+  }
+  return fs;
+}
+
+function FileAssociationRouter({
+  path,
+  configuration,
+}: {
+  path: string;
+  configuration: NonNullable<
+    ReturnType<typeof readConfigurationFromLocalStorage>
+  >;
+}) {
+  const fs = useFs();
 
   const remoteFile = useQuery({
-    queryKey: ["remoteFile", root.id, remotePath],
-    queryFn: () => fetchRemotePath(client, remotePath),
+    queryKey: ["remoteFile", fs.getRoot().id, path],
+    queryFn: () => fs.getFileOrDirectoryInfo(path),
   });
 
   if (remoteFile.isLoading) {
@@ -72,28 +89,28 @@ function RouteComponent() {
 
   if (remoteFile.data.type === "file") {
     const fileViewer: FileViewer = (() => {
-      const fileViewerFromRootConfiguration = root.fileTypeAssociations.find(
-        (fta) => remotePath.endsWith(fta.extension),
-      );
+      const fileViewerFromRootConfiguration = fs
+        .getRoot()
+        .fileTypeAssociations.find((fta) => path.endsWith(fta.extension));
       if (fileViewerFromRootConfiguration)
         return fileViewerFromRootConfiguration.viewer;
 
       const fileViewerFromConfiguration =
         configuration.fileTypeAssociations.find((fta) =>
-          remotePath.endsWith(fta.extension),
+          path.endsWith(fta.extension),
         );
       if (fileViewerFromConfiguration)
         return fileViewerFromConfiguration.viewer;
 
-      if (remotePath.endsWith(".txt")) return "text";
-      if (remotePath.endsWith(".md")) return "markdown";
+      if (path.endsWith(".txt")) return "text";
+      if (path.endsWith(".md")) return "markdown";
       return "default";
     })();
 
     if (fileViewer === "text") {
-      return <TextViewer client={client} root={root} path={remotePath} />;
+      return <TextViewer path={path} />;
     } else if (fileViewer === "markdown") {
-      return <MarkdownViewer client={client} root={root} path={remotePath} />;
+      return <MarkdownViewer path={path} />;
     } else if (fileViewer === "default") {
       return (
         <iframe
@@ -103,7 +120,7 @@ function RouteComponent() {
       );
     }
   } else {
-    return <DirectoryViewer client={client} root={root} path={remotePath} />;
+    return <DirectoryViewer path={path} />;
   }
 }
 
@@ -130,45 +147,6 @@ export function LoadingPage() {
     </div>
   );
 }
-
-async function fetchRemotePath(
-  client: WebDAVClient,
-  remotePath: string,
-): Promise<
-  null | { type: "file"; downloadLink: string } | { type: "directory" }
-> {
-  const stat = await (async () => {
-    try {
-      return (await client.stat(remotePath)) as unknown as FileStat;
-    } catch (e) {
-      if (e instanceof Error && e.message.includes("404")) {
-        return null;
-      }
-      throw e;
-    }
-  })();
-  if (stat === null) {
-    return null;
-  }
-
-  if (stat.type === "directory") {
-    return {
-      type: "directory",
-    };
-  } else {
-    return {
-      type: "file",
-      downloadLink: client.getFileDownloadLink(remotePath),
-    };
-  }
-}
-// todo: simplify ^
-
-export type ViewerInfo = {
-  client: WebDAVClient;
-  root: FliesRoot;
-  path: string;
-};
 
 export function PathBreadcrumbs({
   root,

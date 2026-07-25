@@ -1,11 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import type { ViewerInfo } from "../$";
+import { useFs } from "../$";
 
-export default function TextViewer({ client, root, path }: ViewerInfo) {
+export default function TextViewer({ path }: { path: string }) {
+  const fs = useFs();
   const content = useQuery({
-    queryKey: ["text-file-content", root.id, path],
-    queryFn: () =>
-      client.getFileContents(path) as unknown as ArrayBuffer | String,
+    queryKey: ["text-file-content", fs.getRoot().id, path],
+    queryFn: () => fs.readFile(path),
   });
   const contentStr = content.data
     ? content.data instanceof ArrayBuffer

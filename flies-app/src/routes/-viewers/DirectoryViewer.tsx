@@ -9,11 +9,12 @@ import {
   IconDotsVertical,
   IconFile,
   IconFolder,
+  IconFolderUp,
   IconPlus,
 } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { LoadingPage, PathBreadcrumbs, type ViewerInfo } from "../$";
+import { LoadingPage, PathBreadcrumbs, useFs } from "../$";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,16 +41,18 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "#/components/ui/button";
-import { useState } from "react";
 import { Field, FieldGroup } from "#/components/ui/field";
 import { Label } from "#/components/ui/label";
 import { Input } from "#/components/ui/input";
-import { type WebDAVClient } from "webdav";
+import type { RemoteFileSystem } from "#/fs/fs";
+import { useState } from "react";
 
-export default function DirectoryViewer({ client, root, path }: ViewerInfo) {
+export default function DirectoryViewer({ path }: { path: string }) {
+  const fs = useFs();
+
   const children = useQuery({
-    queryKey: ["directory-children", root.id, path],
-    queryFn: () => client.getDirectoryContents(path),
+    queryKey: ["directory-children", fs.getRoot().id, path],
+    queryFn: () => fs.listDirectory(path),
   });
 
   const [isNewFolderDialogOpen, setIsNewFolderDialogOpen] = useState(false);
@@ -70,16 +73,16 @@ export default function DirectoryViewer({ client, root, path }: ViewerInfo) {
           {
             type: "directory" as const,
             name: "..",
-            link: root.id + "/" + path.split("/").slice(0, -1).join("/"),
-            filename: undefined,
+            link:
+              fs.getRoot().id + "/" + path.split("/").slice(0, -1).join("/"),
+            hasActions: false as const,
           },
         ]
       : []),
     ...children.data!.map((child) => ({
-      type: child.type as "file" | "directory",
-      name: child.filename.split("/").slice(-1)[0],
-      link: root.id + child.filename,
-      filename: child.filename,
+      ...child,
+      link: fs.getRoot().id + child.path,
+      hasActions: true as const,
     })),
   ].sort((a, b) => {
     if (a.type === b.type) {
@@ -90,7 +93,7 @@ export default function DirectoryViewer({ client, root, path }: ViewerInfo) {
 
   return (
     <div className="p-8">
-      <PathBreadcrumbs root={root} path={path} />
+      <PathBreadcrumbs root={fs.getRoot()} path={path} />
       <div className="flex flex-wrap gap-2 mt-6">
         {childElements.map((child) => (
           <FileOrDirectoryItem
@@ -99,8 +102,8 @@ export default function DirectoryViewer({ client, root, path }: ViewerInfo) {
             name={child.name}
             link={child.link}
             onDelete={async () => {
-              if (child.filename) {
-                await client.deleteFile(child.filename);
+              if (child.hasActions) {
+                await fs.deleteFile(child.path);
                 children.refetch();
               }
             }}
@@ -126,7 +129,7 @@ export default function DirectoryViewer({ client, root, path }: ViewerInfo) {
           }
         />
         <NewDirectoryDialog
-          client={client}
+          fs={fs}
           parent={path}
           isOpen={isNewFolderDialogOpen}
           setIsOpen={setIsNewFolderDialogOpen}
@@ -150,7 +153,7 @@ export default function DirectoryViewer({ client, root, path }: ViewerInfo) {
           }
         />
         <NewFileDialog
-          client={client}
+          fs={fs}
           parent={path}
           isOpen={isNewFileDialogOpen}
           setIsOpen={setIsNewFileDialogOpen}
@@ -182,7 +185,11 @@ function FileOrDirectoryItem({
           <Link to="/$" params={{ _splat: link }} className="no-underline">
             <ItemMedia>
               {type === "directory" ? (
-                <IconFolder className="size-5" />
+                name === ".." ? (
+                  <IconFolderUp className="size-5" />
+                ) : (
+                  <IconFolder className="size-5" />
+                )
               ) : (
                 <IconFile className="size-5" />
               )}
@@ -249,13 +256,13 @@ function FileOrDirectoryItem({
 }
 
 function NewFileDialog({
-  client,
+  fs,
   parent,
   isOpen,
   setIsOpen,
   onCreate,
 }: {
-  client: WebDAVClient;
+  fs: RemoteFileSystem;
   parent: string;
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
@@ -264,7 +271,7 @@ function NewFileDialog({
   const [newFileName, setNewFileName] = useState("");
   const createFile = async () => {
     const newFilePath = parent + "/" + newFileName;
-    await client.putFileContents(newFilePath, "");
+    await fs.createFile(newFilePath);
     setIsOpen(false);
     onCreate();
   };
@@ -295,13 +302,13 @@ function NewFileDialog({
 }
 
 function NewDirectoryDialog({
-  client,
+  fs,
   parent,
   isOpen,
   setIsOpen,
   onCreate,
 }: {
-  client: WebDAVClient;
+  fs: RemoteFileSystem;
   parent: string;
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
@@ -310,7 +317,7 @@ function NewDirectoryDialog({
   const [newDirectoryName, setNewDirectoryName] = useState("");
   const createDirectory = async () => {
     const newDirectoryPath = parent + "/" + newDirectoryName;
-    await client.createDirectory(newDirectoryPath);
+    await fs.createDirectory(newDirectoryPath);
     setIsOpen(false);
     onCreate();
   };
