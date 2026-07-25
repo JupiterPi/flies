@@ -10,7 +10,7 @@ import Navbar from "#/components/navbar";
 export const Route = createRootRoute({
   head: () => ({
     meta: [{ title: "Flies" }],
-    links: [{ rel: "icon", href: "/src/flies-logo.ico" }],
+    links: [{ rel: "icon", href: "/flies-logo.svg" }],
   }),
   component: RootComponent,
 });

@@ -29,16 +29,18 @@ const ThemeProviderContext = createContext<ThemeProviderState>({
 function applyTheme(theme: Theme) {
   const root = document.documentElement;
   root.classList.remove("light", "dark");
-
-  const resolved =
-    theme === "system"
-      ? window.matchMedia("(prefers-color-scheme: dark)").matches
-        ? "dark"
-        : "light"
-      : theme;
-
+  const resolved = resolveTheme(theme);
   root.classList.add(resolved);
   root.style.colorScheme = resolved;
+}
+
+export function resolveTheme(theme: Theme): "light" | "dark" {
+  if (theme === "system") {
+    return window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
+  }
+  return theme;
 }
 
 export function ThemeProvider({

@@ -9,6 +9,10 @@ import {
 import { IconMenu } from "@tabler/icons-react";
 import { ModeToggle } from "./theme-toggle";
 import { Link } from "@tanstack/react-router";
+import { resolveTheme, useTheme } from "./theme-provider";
+
+import fliesLogoLight from "@/flies-logo-light.svg";
+import filesLogoDark from "@/flies-logo-dark.svg";
 
 type NavigationItem = {
   title: string;
@@ -16,16 +20,18 @@ type NavigationItem = {
 }[];
 
 const Navbar = ({ navigationData }: { navigationData: NavigationItem }) => {
+  const { theme } = useTheme();
+
   return (
     <header className="bg-sidebar sticky top-0 z-50 border-b border-border">
       <div className="flex justify-between gap-8 px-4 py-4 sm:px-6">
         <div className="text-muted-foreground flex flex-1 items-center gap-8 font-medium">
-          <Link to="/" className="flex items-center gap-2 dark:invert">
-            <img
-              src="/src/flies-logo.ico"
-              alt="Flies Logo"
-              className="h-8 w-8"
-            />
+          <Link to="/" className="flex items-center gap-2">
+            {resolveTheme(theme) === "dark" ? (
+              <img src={filesLogoDark} alt="Flies Logo" className="h-8 w-8" />
+            ) : (
+              <img src={fliesLogoLight} alt="Flies Logo" className="h-8 w-8" />
+            )}
           </Link>
           {/* <a href="#" className="hover:text-primary max-md:hidden">
             Home
