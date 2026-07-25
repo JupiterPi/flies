@@ -40,7 +40,7 @@ const Navbar = ({ navigationData }: { navigationData: NavigationItem }) => {
             Contact Us
           </a> */}
           <Link to="/config" className="hover:text-primary max-md:hidden">
-            Config
+            Flies Config
           </Link>
         </div>
 

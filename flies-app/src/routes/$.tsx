@@ -10,6 +10,14 @@ import { createClient, type FileStat, type WebDAVClient } from "webdav";
 import TextViewer from "./-viewers/TextViewer";
 import DirectoryViewer from "./-viewers/DirectoryViewer";
 import { IconLoader } from "@tabler/icons-react";
+import MarkdownViewer from "./-viewers/MarkdownViewer";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbSeparator,
+} from "#/components/ui/breadcrumb";
 
 export const Route = createFileRoute("/$")({
   component: RouteComponent,
@@ -85,7 +93,7 @@ function RouteComponent() {
     if (fileViewer === "text") {
       return <TextViewer client={client} root={root} path={remotePath} />;
     } else if (fileViewer === "markdown") {
-      return <TextViewer client={client} root={root} path={remotePath} />;
+      return <MarkdownViewer client={client} root={root} path={remotePath} />;
     } else if (fileViewer === "default") {
       return (
         <iframe
@@ -161,3 +169,57 @@ export type ViewerInfo = {
   root: FliesRoot;
   path: string;
 };
+
+export function PathBreadcrumbs({
+  root,
+  path,
+}: {
+  root: FliesRoot;
+  path: string;
+}) {
+  const pathSegments = path.split("/").filter((segment) => segment !== "");
+  return (
+    <Breadcrumb>
+      <BreadcrumbList>
+        <BreadcrumbItem>
+          <BreadcrumbLink
+            render={
+              <Link
+                to="/$"
+                params={{
+                  _splat: root.id,
+                }}
+                className="text-base"
+              >
+                {root.name ?? root.id}
+              </Link>
+            }
+          />
+        </BreadcrumbItem>
+        {pathSegments.map((segment, index) => (
+          <>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem key={index}>
+              <BreadcrumbLink
+                render={
+                  <Link
+                    to="/$"
+                    params={{
+                      _splat:
+                        root.id +
+                        "/" +
+                        pathSegments.slice(0, index + 1).join("/"),
+                    }}
+                    className="text-base"
+                  >
+                    {segment}
+                  </Link>
+                }
+              />
+            </BreadcrumbItem>
+          </>
+        ))}
+      </BreadcrumbList>
+    </Breadcrumb>
+  );
+}

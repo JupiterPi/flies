@@ -13,7 +13,7 @@ import {
 } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { LoadingPage, type ViewerInfo } from "../$";
+import { LoadingPage, PathBreadcrumbs, type ViewerInfo } from "../$";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,13 +45,6 @@ import { Field, FieldGroup } from "#/components/ui/field";
 import { Label } from "#/components/ui/label";
 import { Input } from "#/components/ui/input";
 import { type WebDAVClient } from "webdav";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbSeparator,
-} from "#/components/ui/breadcrumb";
 
 export default function DirectoryViewer({ client, root, path }: ViewerInfo) {
   const children = useQuery({
@@ -60,6 +53,7 @@ export default function DirectoryViewer({ client, root, path }: ViewerInfo) {
   });
 
   const [isNewFolderDialogOpen, setIsNewFolderDialogOpen] = useState(false);
+  const [isNewFileDialogOpen, setIsNewFileDialogOpen] = useState(false);
 
   if (children.isLoading) {
     return <LoadingPage />;
@@ -94,54 +88,10 @@ export default function DirectoryViewer({ client, root, path }: ViewerInfo) {
     return a.type === "directory" ? -1 : 1;
   });
 
-  const pathSegments = path.split("/").filter((segment) => segment !== "");
-
   return (
     <div className="p-8">
-      <Breadcrumb className="mb-6">
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink
-              render={
-                <Link
-                  to="/$"
-                  params={{
-                    _splat: root.id,
-                  }}
-                  className="text-base"
-                >
-                  {root.name ?? root.id}
-                </Link>
-              }
-            />
-          </BreadcrumbItem>
-          {pathSegments.map((segment, index) => (
-            <>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem key={index}>
-                <BreadcrumbLink
-                  render={
-                    <Link
-                      to="/$"
-                      params={{
-                        _splat:
-                          root.id +
-                          "/" +
-                          pathSegments.slice(0, index + 1).join("/"),
-                      }}
-                      className="text-base"
-                    >
-                      {segment}
-                    </Link>
-                  }
-                />
-              </BreadcrumbItem>
-            </>
-          ))}
-        </BreadcrumbList>
-      </Breadcrumb>
-
-      <div className="flex flex-col gap-2">
+      <PathBreadcrumbs root={root} path={path} />
+      <div className="flex flex-wrap gap-2 mt-6">
         {childElements.map((child) => (
           <FileOrDirectoryItem
             key={child.link}
@@ -157,7 +107,7 @@ export default function DirectoryViewer({ client, root, path }: ViewerInfo) {
           />
         ))}
 
-        {/* new folder */}
+        {/* new directory or file */}
         <Item
           variant="outline"
           className="bg-card max-w-75"
@@ -180,6 +130,30 @@ export default function DirectoryViewer({ client, root, path }: ViewerInfo) {
           parent={path}
           isOpen={isNewFolderDialogOpen}
           setIsOpen={setIsNewFolderDialogOpen}
+          onCreate={() => children.refetch()}
+        />
+        <Item
+          variant="outline"
+          className="bg-card max-w-75"
+          render={
+            <button
+              onClick={() => setIsNewFileDialogOpen(true)}
+              className="no-underline cursor-pointer"
+            >
+              <ItemMedia>
+                <IconPlus className="size-5" />
+              </ItemMedia>
+              <ItemContent>
+                <ItemTitle>New File</ItemTitle>
+              </ItemContent>
+            </button>
+          }
+        />
+        <NewFileDialog
+          client={client}
+          parent={path}
+          isOpen={isNewFileDialogOpen}
+          setIsOpen={setIsNewFileDialogOpen}
           onCreate={() => children.refetch()}
         />
       </div>
@@ -271,6 +245,52 @@ function FileOrDirectoryItem({
         </AlertDialogContent>
       </AlertDialog>
     </>
+  );
+}
+
+function NewFileDialog({
+  client,
+  parent,
+  isOpen,
+  setIsOpen,
+  onCreate,
+}: {
+  client: WebDAVClient;
+  parent: string;
+  isOpen: boolean;
+  setIsOpen: (open: boolean) => void;
+  onCreate: () => void;
+}) {
+  const [newFileName, setNewFileName] = useState("");
+  const createFile = async () => {
+    const newFilePath = parent + "/" + newFileName;
+    await client.putFileContents(newFilePath, "");
+    setIsOpen(false);
+    onCreate();
+  };
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Create New File</DialogTitle>
+          <DialogDescription>Enter a name for the new file.</DialogDescription>
+        </DialogHeader>
+        <FieldGroup>
+          <Field>
+            <Label htmlFor="new-file-name">File Name</Label>
+            <Input
+              name="new-file-name"
+              value={newFileName}
+              onChange={(e) => setNewFileName(e.target.value)}
+            />
+          </Field>
+        </FieldGroup>
+        <DialogFooter>
+          <DialogClose render={<Button variant="outline">Cancel</Button>} />
+          <Button onClick={createFile}>Create</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

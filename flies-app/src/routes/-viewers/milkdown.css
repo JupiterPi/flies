@@ -1,0 +1,37 @@
+.milkdown .ProseMirror {
+  padding: 0 60px !important;
+}
+
+.milkdown {
+  /* see https://milkdown.dev/docs/guide/styling#theme-variables */
+
+  --crepe-color-background: var(--background);
+  --crepe-color-surface: var(--card);
+  --crepe-color-surface-low: var(--card); /* todo? */
+
+  --crepe-color-on-background: var(--foreground);
+  --crepe-color-on-surface: var(--card-foreground);
+  --crepe-color-on-surface-variant: var(--card-foreground);
+
+  --crepe-color-primary: var(--primary);
+  --crepe-color-secondary: var(--secondary);
+  --crepe-color-on-secondary: var(--secondary-foreground);
+
+  --crepe-color-outline: color-mix(
+    in srgb,
+    var(--border) 60%,
+    var(--foreground)
+  );
+  --crepe-color-inverse: var(--card); /* todo? */
+  --crepe-color-on-inverse: var(--card-foreground); /* todo? */
+  --crepe-color-inline-code: var(--foreground); /* todo? */
+  --crepe-color-error: var(--destructive);
+
+  --crepe-color-hover: var(--muted); /* todo? */
+  --crepe-color-selected: var(--muted); /* todo? */
+  --crepe-color-inline-area: var(--muted); /* todo? */
+
+  --crepe-font-title: var(--font-heading);
+  --crepe-font-default: var(--font-sans);
+  --crepe-font-code: var(--font-mono);
+}
