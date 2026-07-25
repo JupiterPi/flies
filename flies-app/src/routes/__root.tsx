@@ -23,7 +23,7 @@ function RootComponent() {
       <HeadContent />
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
-          <Navbar navigationData={[]} />
+          <Navbar />
           <Outlet />
         </ThemeProvider>
       </QueryClientProvider>

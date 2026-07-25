@@ -14,13 +14,10 @@ import { resolveTheme, useTheme } from "./theme-provider";
 import fliesLogoLight from "@/flies-logo-light.svg";
 import filesLogoDark from "@/flies-logo-dark.svg";
 
-type NavigationItem = {
-  title: string;
-  href: string;
-}[];
-
-const Navbar = ({ navigationData }: { navigationData: NavigationItem }) => {
+const Navbar = () => {
   const { theme } = useTheme();
+
+  const navigationItems = [{ title: "Flies Config", href: "/config" }];
 
   return (
     <header className="bg-sidebar sticky top-0 z-50 border-b border-border">
@@ -33,21 +30,15 @@ const Navbar = ({ navigationData }: { navigationData: NavigationItem }) => {
               <img src={fliesLogoLight} alt="Flies Logo" className="h-8 w-8" />
             )}
           </Link>
-          {/* <a href="#" className="hover:text-primary max-md:hidden">
-            Home
-          </a>
-          <a href="#" className="hover:text-primary max-md:hidden">
-            Products
-          </a>
-          <a href="#" className="hover:text-primary max-md:hidden">
-            About Us
-          </a>
-          <a href="#" className="hover:text-primary max-md:hidden">
-            Contact Us
-          </a> */}
-          <Link to="/config" className="hover:text-primary max-md:hidden">
-            Flies Config
-          </Link>
+          {navigationItems.map((item, index) => (
+            <Link
+              key={index}
+              to={item.href}
+              className="hover:text-primary max-md:hidden"
+            >
+              {item.title}
+            </Link>
+          ))}
         </div>
 
         <div className="flex items-center gap-6">
@@ -62,10 +53,11 @@ const Navbar = ({ navigationData }: { navigationData: NavigationItem }) => {
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end">
               <DropdownMenuGroup>
-                {navigationData.map((item, index) => (
-                  <DropdownMenuItem key={index}>
-                    <a href={item.href}>{item.title}</a>
-                  </DropdownMenuItem>
+                {navigationItems.map((item, index) => (
+                  <DropdownMenuItem
+                    key={index}
+                    render={<Link to={item.href}>{item.title}</Link>}
+                  />
                 ))}
               </DropdownMenuGroup>
             </DropdownMenuContent>
