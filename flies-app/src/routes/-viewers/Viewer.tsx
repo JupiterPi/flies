@@ -20,7 +20,7 @@ export default function Viewer({
 }) {
   const fs = useFs();
 
-  const content = useQuery({
+  const queriedContent = useQuery({
     queryKey: ["file-content", fs.getRoot().id, path],
     queryFn: () => fs.readFile(path),
   });
@@ -47,13 +47,14 @@ export default function Viewer({
     }
   }, [saveStatus]);
 
-  if (content.isLoading) {
+  if (queriedContent.isLoading) {
     return <LoadingPage />;
   }
-  const contentStr =
-    content.data! instanceof ArrayBuffer
-      ? new TextDecoder().decode(content.data!)
-      : (content.data as string);
+  const queriedContentStr =
+    queriedContent.data! instanceof ArrayBuffer
+      ? new TextDecoder().decode(queriedContent.data!)
+      : (queriedContent.data as string);
+  const content = contentInput === null ? queriedContentStr : contentInput;
 
   const SaveStatusIndicator = (
     <>
@@ -72,5 +73,5 @@ export default function Viewer({
       )}
     </>
   );
-  return children(contentStr, setContentInput, SaveStatusIndicator);
+  return children(content, setContentInput, SaveStatusIndicator);
 }

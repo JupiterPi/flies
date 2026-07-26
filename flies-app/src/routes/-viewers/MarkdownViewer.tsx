@@ -1,4 +1,4 @@
-import { PathBreadcrumbs, useFs } from "../$";
+import { PathBreadcrumbs } from "../$";
 import { Milkdown, MilkdownProvider, useEditor } from "@milkdown/react";
 import { Crepe } from "@milkdown/crepe";
 import "@milkdown/crepe/theme/common/style.css";
@@ -17,13 +17,11 @@ export default function MarkdownViewer({
   setContent: (content: string) => void;
   SaveStatusIndicator: React.ReactNode;
 }) {
-  const fs = useFs();
-
   return (
     <MilkdownProvider>
       {/* status bar */}
       <div className="mt-8 ml-[60px] flex gap-4 items-center">
-        <PathBreadcrumbs root={fs.getRoot()} path={path} />
+        <PathBreadcrumbs path={path} />
         {SaveStatusIndicator}
       </div>
 

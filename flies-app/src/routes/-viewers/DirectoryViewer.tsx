@@ -91,7 +91,7 @@ export default function DirectoryViewer({ path }: { path: string }) {
 
   return (
     <div className="p-8">
-      <PathBreadcrumbs root={fs.getRoot()} path={path} />
+      <PathBreadcrumbs path={path} />
       <div className="flex flex-wrap gap-2 mt-6">
         {childElements.map((child) => (
           <FileOrDirectoryItem

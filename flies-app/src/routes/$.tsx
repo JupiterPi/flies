@@ -1,6 +1,5 @@
 import {
   FileViewer,
-  FliesRoot,
   readConfigurationFromLocalStorage,
 } from "#/data/configuration";
 import { useQuery } from "@tanstack/react-query";
@@ -20,6 +19,7 @@ import { WebDAVClientFS, type RemoteFileSystem } from "#/fs/fs";
 import { createContext, useContext } from "react";
 import ExcalidrawViewer from "./-viewers/ExcalidrawViewer";
 import Viewer from "./-viewers/Viewer";
+import SchmierzettelViewer from "./-viewers/SchmierzettelViewer";
 
 export const Route = createFileRoute("/$")({
   component: RouteComponent,
@@ -107,6 +107,7 @@ function FileAssociationRouter({
       if (path.endsWith(".txt")) return "text";
       if (path.endsWith(".md")) return "markdown";
       if (path.endsWith(".excalidraw")) return "excalidraw";
+      if (path.endsWith("Schmierzettel")) return "schmierzettel";
       return "default";
     })();
 
@@ -135,6 +136,15 @@ function FileAssociationRouter({
                 SaveStatusIndicator={SaveStatusIndicator}
               />
             );
+          } else if (fileViewer === "schmierzettel") {
+            return (
+              <SchmierzettelViewer
+                path={path}
+                content={content}
+                setContent={setContent}
+                SaveStatusIndicator={SaveStatusIndicator}
+              />
+            );
           } else if (fileViewer === "default") {
             return (
               <object
@@ -151,7 +161,7 @@ function FileAssociationRouter({
   }
 }
 
-function ErrorPage({ children }: { children: React.ReactNode }) {
+export function ErrorPage({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex mt-10 w-full items-center justify-center">
       <div className="text-center text-lg font-semibold text-red-600">
@@ -175,13 +185,8 @@ export function LoadingPage() {
   );
 }
 
-export function PathBreadcrumbs({
-  root,
-  path,
-}: {
-  root: FliesRoot;
-  path: string;
-}) {
+export function PathBreadcrumbs({ path }: { path: string }) {
+  const fs = useFs();
   const pathSegments = path.split("/").filter((segment) => segment !== "");
   return (
     <Breadcrumb>
@@ -192,11 +197,11 @@ export function PathBreadcrumbs({
               <Link
                 to="/$"
                 params={{
-                  _splat: root.id,
+                  _splat: fs.getRoot().id,
                 }}
                 className="text-base"
               >
-                {root.name ?? root.id}
+                {fs.getRoot().name ?? fs.getRoot().id}
               </Link>
             }
           />
@@ -211,7 +216,7 @@ export function PathBreadcrumbs({
                     to="/$"
                     params={{
                       _splat:
-                        root.id +
+                        fs.getRoot().id +
                         "/" +
                         pathSegments.slice(0, index + 1).join("/"),
                     }}
