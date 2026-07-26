@@ -18,6 +18,7 @@ import {
 } from "#/components/ui/breadcrumb";
 import { WebDAVClientFS, type RemoteFileSystem } from "#/fs/fs";
 import { createContext, useContext } from "react";
+import ExcalidrawViewer from "./-viewers/ExcalidrawViewer";
 
 export const Route = createFileRoute("/$")({
   component: RouteComponent,
@@ -104,6 +105,7 @@ function FileAssociationRouter({
 
       if (path.endsWith(".txt")) return "text";
       if (path.endsWith(".md")) return "markdown";
+      if (path.endsWith(".excalidraw")) return "excalidraw";
       return "default";
     })();
 
@@ -111,6 +113,8 @@ function FileAssociationRouter({
       return <TextViewer path={path} />;
     } else if (fileViewer === "markdown") {
       return <MarkdownViewer path={path} />;
+    } else if (fileViewer === "excalidraw") {
+      return <ExcalidrawViewer path={path} />;
     } else if (fileViewer === "default") {
       return (
         <object

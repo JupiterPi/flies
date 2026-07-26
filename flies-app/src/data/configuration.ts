@@ -16,7 +16,7 @@ export const PathAssociation = z.object({
 });
 export type PathAssociation = z.infer<typeof PathAssociation>;
 
-export const FileViewer = z.enum(["text", "markdown", "default"]);
+export const FileViewer = z.enum(["text", "markdown", "excalidraw", "default"]);
 export type FileViewer = z.infer<typeof FileViewer>;
 
 export const FileTypeAssociation = z.object({

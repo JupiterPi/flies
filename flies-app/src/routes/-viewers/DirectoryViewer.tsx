@@ -329,7 +329,7 @@ function CreateFileOrDirectoryItem({
                 await (type === "file"
                   ? fs.createFile(newItemPath)
                   : fs.createDirectory(newItemPath));
-                close();
+                setIsOpen(false);
                 onRefresh();
               }}
             >
