@@ -19,6 +19,7 @@ import {
 import { WebDAVClientFS, type RemoteFileSystem } from "#/fs/fs";
 import { createContext, useContext } from "react";
 import ExcalidrawViewer from "./-viewers/ExcalidrawViewer";
+import Viewer from "./-viewers/Viewer";
 
 export const Route = createFileRoute("/$")({
   component: RouteComponent,
@@ -109,20 +110,42 @@ function FileAssociationRouter({
       return "default";
     })();
 
-    if (fileViewer === "text") {
-      return <TextViewer path={path} />;
-    } else if (fileViewer === "markdown") {
-      return <MarkdownViewer path={path} />;
-    } else if (fileViewer === "excalidraw") {
-      return <ExcalidrawViewer path={path} />;
-    } else if (fileViewer === "default") {
-      return (
-        <object
-          data={remoteFile.data.downloadLink}
-          className="w-full h-[calc(100vh-69px)]" // todo: hardcoded navbar height
-        ></object>
-      );
-    }
+    const downloadLink = remoteFile.data.downloadLink;
+    return (
+      <Viewer
+        path={path}
+        children={(content, setContent, SaveStatusIndicator) => {
+          if (fileViewer === "text") {
+            return <TextViewer path={path} />;
+          } else if (fileViewer === "markdown") {
+            return (
+              <MarkdownViewer
+                path={path}
+                content={content}
+                setContent={setContent}
+                SaveStatusIndicator={SaveStatusIndicator}
+              />
+            );
+          } else if (fileViewer === "excalidraw") {
+            return (
+              <ExcalidrawViewer
+                path={path}
+                content={content}
+                setContent={setContent}
+                SaveStatusIndicator={SaveStatusIndicator}
+              />
+            );
+          } else if (fileViewer === "default") {
+            return (
+              <object
+                data={downloadLink}
+                className="w-full h-[calc(100vh-69px)]" // todo: hardcoded navbar height
+              ></object>
+            );
+          }
+        }}
+      ></Viewer>
+    );
   } else {
     return <DirectoryViewer path={path} />;
   }

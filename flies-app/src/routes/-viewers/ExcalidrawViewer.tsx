@@ -1,59 +1,25 @@
-import { useQuery } from "@tanstack/react-query";
-import { LoadingPage, useFs } from "../$";
-import classNames from "classnames";
-import { useDebounce } from "@uidotdev/usehooks";
-import { useEffect, useState } from "react";
-import {
-  IconCloudCheck,
-  IconCloudUpload,
-  IconFolderUp,
-} from "@tabler/icons-react";
+import { IconFolderUp } from "@tabler/icons-react";
 import { Excalidraw } from "@excalidraw/excalidraw";
 import "@excalidraw/excalidraw/index.css";
 import { resolveTheme, useTheme } from "#/components/theme-provider";
 import { Link } from "@tanstack/react-router";
+import { useFs } from "../$";
 
-export default function ExcalidrawViewer({ path }: { path: string }) {
+export default function ExcalidrawViewer({
+  path,
+  content,
+  setContent,
+  SaveStatusIndicator,
+}: {
+  path: string;
+  content: string;
+  setContent: (content: string) => void;
+  SaveStatusIndicator: React.ReactNode;
+}) {
   const fs = useFs();
-
-  const content = useQuery({
-    queryKey: ["text-file-content", fs.getRoot().id, path],
-    queryFn: () => fs.readFile(path),
-  });
-
-  const [excalidrawInput, setExcalidrawInput] = useState<string | null>(null);
-  const debouncedExcalidrawInput = useDebounce(excalidrawInput, 1000);
-  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">(
-    "idle",
-  );
-  useEffect(() => {
-    if (debouncedExcalidrawInput !== null && saveStatus !== "saving") {
-      setSaveStatus("saving");
-      fs.writeFile(path, debouncedExcalidrawInput).then(() => {
-        setSaveStatus("saved");
-      });
-    }
-  }, [debouncedExcalidrawInput]);
-  useEffect(() => {
-    if (saveStatus === "saved") {
-      const timeout = setTimeout(() => {
-        setSaveStatus("idle");
-      }, 700);
-      return () => clearTimeout(timeout);
-    }
-  }, [saveStatus]);
-
   const { theme } = useTheme();
 
-  if (content.isLoading) {
-    return <LoadingPage />;
-  }
-  const contentStr =
-    content.data! instanceof ArrayBuffer
-      ? new TextDecoder().decode(content.data!)
-      : (content.data as string);
-  const parsedContent =
-    contentStr.length > 0 ? JSON.parse(contentStr) : undefined;
+  const parsedContent = content.length > 0 ? JSON.parse(content) : undefined;
 
   return (
     <div className="w-full h-[calc(100vh-69px)]">
@@ -73,19 +39,7 @@ export default function ExcalidrawViewer({ path }: { path: string }) {
               >
                 <IconFolderUp className="size-5" />
               </Link>
-              {(saveStatus === "idle" || saveStatus === "saved") && (
-                <IconCloudCheck
-                  className={classNames(
-                    "size-5 transition-opacity transition-duration-300",
-                    {
-                      "opacity-50": saveStatus === "idle",
-                    },
-                  )}
-                />
-              )}
-              {saveStatus === "saving" && (
-                <IconCloudUpload className="size-5 opacity-75" />
-              )}
+              {SaveStatusIndicator}
             </div>
           )}
           theme={resolveTheme(theme)}
@@ -98,7 +52,7 @@ export default function ExcalidrawViewer({ path }: { path: string }) {
               appState,
               files,
             };
-            setExcalidrawInput(JSON.stringify(excalidrawSave, null, 2));
+            setContent(JSON.stringify(excalidrawSave, null, 2));
           }}
           initialData={
             parsedContent
