@@ -1,11 +1,5 @@
 import { Button } from "#/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "#/components/ui/card";
+import { Card, CardContent, CardFooter } from "#/components/ui/card";
 import {
   Dialog,
   DialogClose,
@@ -29,11 +23,16 @@ import { Textarea } from "#/components/ui/textarea";
 import {
   IconBellCheck,
   IconBellOff,
+  IconBellPlus,
+  IconBellRinging,
   IconEdit,
   IconPlus,
 } from "@tabler/icons-react";
 import { createContext, useContext, useEffect, useState } from "react";
 import z from "zod";
+import { Masonry } from "masonic";
+import { Toggle } from "#/components/ui/toggle";
+import { toast } from "#/components/ui/toast";
 
 export const SchmierzettelNote = z.object({
   timestamp: z.number(),
@@ -99,7 +98,7 @@ function NtfyshConfigurer() {
       <ItemContent>
         <ItemTitle>
           {data.ntfyshUrl
-            ? `Connected to ${data.ntfyshUrl}`
+            ? `Sending notifications to ${new URL(data.ntfyshUrl).hostname}`
             : "Not connected to a notification service"}
         </ItemTitle>
       </ItemContent>
@@ -184,13 +183,18 @@ function SchmierzettelNotes() {
       {data.notes.length === 0 && (
         <div className="text-muted-foreground italic">No notes yet.</div>
       )}
-      <div className="flex flex-wrap gap-4">
-        {data.notes.map((note, index) => (
-          <NoteCard key={index} note={note} />
-        ))}
-      </div>
-      <div className="mt-4">
+      <div className="my-4">
         <CreateNoteButton />
+      </div>
+      <div className="flex flex-wrap gap-4">
+        <Masonry
+          key={data.notes.length} // trigger re-render when notes change, see error that is otherwise thrown
+          items={data.notes}
+          columnGutter={16}
+          columnWidth={300}
+          overscanBy={5}
+          render={(data) => <NoteCard note={data.data} />}
+        ></Masonry>
       </div>
     </div>
   );
@@ -199,12 +203,7 @@ function SchmierzettelNotes() {
 function NoteCard({ note }: { note: SchmierzettelNote }) {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   return (
-    <Card size="sm" className="w-sm h-fit">
-      <CardHeader>
-        <CardTitle>
-          Note from {new Date(note.timestamp).toLocaleString()}
-        </CardTitle>
-      </CardHeader>
+    <Card size="sm" className="w-full h-fit">
       <CardContent className="flex-1 overflow-y-auto">
         <div className="whitespace-pre-line">{note.text}</div>
       </CardContent>
@@ -256,32 +255,118 @@ function CaptureOrEditNoteDialog({
       setNoteTextInput(existingNote?.text ?? "");
     }
   }, [isOpen]);
+  const notificationIntervals = ["10s", "5m", "10m", "15m", "30m", "1h", "3h"];
+  const [notifications, setNotifications] = useState<string[]>([]);
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{existingNote ? "Edit" : "Capture"} Note</DialogTitle>
         </DialogHeader>
-        <Field>
-          <FieldLabel>Note</FieldLabel>
-          <Textarea
-            placeholder="Enter your note here"
-            value={noteTextInput}
-            onChange={(e) => setNoteTextInput(e.target.value)}
-          />
-        </Field>
+        <Textarea
+          placeholder="Enter your note here"
+          value={noteTextInput}
+          onChange={(e) => setNoteTextInput(e.target.value)}
+        />
+        {data.ntfyshUrl !== null && existingNote === null && (
+          <div className="flex gap-2 flex-wrap">
+            {notificationIntervals.map((interval) => (
+              <Toggle
+                key={interval}
+                variant="outline"
+                onClick={() => {
+                  if (notifications.includes(interval)) {
+                    setNotifications(
+                      notifications.filter((n) => n !== interval),
+                    );
+                  } else {
+                    setNotifications([...notifications, interval]);
+                  }
+                }}
+              >
+                {notifications.includes(interval) ? (
+                  <IconBellRinging />
+                ) : (
+                  <IconBellPlus />
+                )}
+                {interval}
+              </Toggle>
+            ))}
+          </div>
+        )}
         <DialogFooter>
           <DialogClose render={<Button variant="outline">Cancel</Button>} />
+          {existingNote && (
+            <DialogClose
+              render={
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    setData({
+                      ...data,
+                      notes: [...data.notes.filter((n) => n !== existingNote)],
+                    });
+                  }}
+                >
+                  Delete
+                </Button>
+              }
+            />
+          )}
           <DialogClose
             render={
               <Button
                 disabled={noteTextInput.trim() === ""}
-                onClick={() => {
+                onClick={async () => {
                   const note = {
                     ...existingNote,
                     text: noteTextInput,
                     timestamp: Date.now(),
                   };
+                  if (notifications.length > 0) {
+                    let success = true;
+                    for (const notificationInterval of notifications) {
+                      try {
+                        const res = await fetch(data.ntfyshUrl!, {
+                          method: "POST",
+                          body: note.text,
+                          headers: {
+                            At: notificationInterval,
+                            Click: window.location.href,
+                          },
+                        });
+                        if (!res.ok) {
+                          console.error(
+                            `Failed to send notification for interval ${notificationInterval}: ${res.status} ${res.statusText}`,
+                          );
+                          toast.add({
+                            title: "Notification Failed",
+                            description: `Failed to send notification for interval ${notificationInterval}: ${res.status} ${res.statusText}`,
+                            type: "error",
+                          });
+                          success = false;
+                        }
+                      } catch (e) {
+                        console.error(
+                          `Failed to send notification for interval ${notificationInterval}: ${e}`,
+                        );
+                        toast.add({
+                          title: "Notification Failed",
+                          description: `Failed to send notification for interval ${notificationInterval}: ${e}`,
+                          type: "error",
+                        });
+                        success = false;
+                      }
+                    }
+                    if (success) {
+                      toast.add({
+                        title: `Notifications sent for ${notifications.join(
+                          ", ",
+                        )}`,
+                        type: "success",
+                      });
+                    }
+                  }
                   setData({
                     ...data,
                     notes: [
