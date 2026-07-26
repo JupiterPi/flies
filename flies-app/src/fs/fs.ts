@@ -25,6 +25,8 @@ export interface RemoteFileSystem {
   readFile(path: string): Promise<ArrayBuffer | string>;
 
   writeFile(path: string, content: ArrayBuffer | string): Promise<void>;
+
+  getFileDownloadLink(path: string): string;
 }
 
 // webdav client implementation
@@ -95,5 +97,9 @@ export class WebDAVClientFS implements RemoteFileSystem {
 
   async writeFile(path: string, content: ArrayBuffer | string) {
     await this.client.putFileContents(path, content);
+  }
+
+  getFileDownloadLink(path: string) {
+    return this.client.getFileDownloadLink(path);
   }
 }

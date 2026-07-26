@@ -113,10 +113,10 @@ function FileAssociationRouter({
       return <MarkdownViewer path={path} />;
     } else if (fileViewer === "default") {
       return (
-        <iframe
-          src={remoteFile.data.downloadLink}
-          sandbox="allow-popups allow-same-origin allow-scripts"
-        ></iframe>
+        <object
+          data={remoteFile.data.downloadLink}
+          className="w-full h-[calc(100vh-69px)]" // todo: hardcoded navbar height
+        ></object>
       );
     }
   } else {

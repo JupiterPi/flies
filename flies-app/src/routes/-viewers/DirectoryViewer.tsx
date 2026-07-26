@@ -6,11 +6,14 @@ import {
   ItemTitle,
 } from "#/components/ui/item";
 import {
+  IconArrowRight,
   IconDotsVertical,
+  IconDownload,
   IconFile,
   IconFolder,
   IconFolderUp,
   IconPlus,
+  IconTrash,
 } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
@@ -73,16 +76,14 @@ export default function DirectoryViewer({ path }: { path: string }) {
           {
             type: "directory" as const,
             name: "..",
-            link:
-              fs.getRoot().id + "/" + path.split("/").slice(0, -1).join("/"),
-            hasActions: false as const,
+            path: "/" + path.split("/").slice(0, -1).join("/"),
+            hasActions: false,
           },
         ]
       : []),
     ...children.data!.map((child) => ({
       ...child,
-      link: fs.getRoot().id + child.path,
-      hasActions: true as const,
+      hasActions: true,
     })),
   ].sort((a, b) => {
     if (a.type === b.type) {
@@ -97,10 +98,10 @@ export default function DirectoryViewer({ path }: { path: string }) {
       <div className="flex flex-wrap gap-2 mt-6">
         {childElements.map((child) => (
           <FileOrDirectoryItem
-            key={child.link}
+            key={child.path}
             type={child.type}
             name={child.name}
-            link={child.link}
+            path={child.path}
             onDelete={async () => {
               if (child.hasActions) {
                 await fs.deleteFile(child.path);
@@ -167,22 +168,27 @@ export default function DirectoryViewer({ path }: { path: string }) {
 function FileOrDirectoryItem({
   type,
   name,
-  link,
+  path,
   onDelete,
 }: {
   type: "file" | "directory";
   name: string;
-  link: string;
+  path: string;
   onDelete: () => void;
 }) {
+  const fs = useFs();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   return (
     <>
       <Item
         variant="outline"
-        className="bg-card max-w-75"
+        className="bg-card w-75"
         render={
-          <Link to="/$" params={{ _splat: link }} className="no-underline">
+          <Link
+            to="/$"
+            params={{ _splat: fs.getRoot().id + path }}
+            className="no-underline flex flex-nowrap! justify-stretch"
+          >
             <ItemMedia>
               {type === "directory" ? (
                 name === ".." ? (
@@ -194,9 +200,7 @@ function FileOrDirectoryItem({
                 <IconFile className="size-5" />
               )}
             </ItemMedia>
-            <ItemContent>
-              <ItemTitle>{name}</ItemTitle>
-            </ItemContent>
+            <div className="flex-1 truncate">{name}</div>
             {name !== ".." && (
               <ItemActions>
                 <DropdownMenu>
@@ -213,16 +217,34 @@ function FileOrDirectoryItem({
                   />
                   <DropdownMenuContent onClick={(e) => e.preventDefault()}>
                     <DropdownMenuItem
-                      render={<Link to="/$" params={{ _splat: link }} />}
+                      render={
+                        <Link
+                          to="/$"
+                          params={{ _splat: fs.getRoot().id + path }}
+                        />
+                      }
                     >
+                      <IconArrowRight />
                       Open
                     </DropdownMenuItem>
+                    {path && (
+                      <DropdownMenuItem
+                        onClick={() => {
+                          const downloadLink = fs.getFileDownloadLink(path);
+                          window.open(downloadLink, "_blank");
+                        }}
+                      >
+                        <IconDownload />
+                        Download
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem
                       variant="destructive"
                       onClick={() => {
                         setIsDeleteDialogOpen(true);
                       }}
                     >
+                      <IconTrash />
                       Delete
                     </DropdownMenuItem>
                   </DropdownMenuContent>
