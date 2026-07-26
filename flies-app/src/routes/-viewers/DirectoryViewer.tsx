@@ -9,6 +9,7 @@ import {
   IconArrowRight,
   IconDotsVertical,
   IconDownload,
+  IconEdit,
   IconFile,
   IconFolder,
   IconFolderUp,
@@ -47,8 +48,7 @@ import { Button } from "#/components/ui/button";
 import { Field, FieldGroup } from "#/components/ui/field";
 import { Label } from "#/components/ui/label";
 import { Input } from "#/components/ui/input";
-import type { RemoteFileSystem } from "#/fs/fs";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function DirectoryViewer({ path }: { path: string }) {
   const fs = useFs();
@@ -57,9 +57,6 @@ export default function DirectoryViewer({ path }: { path: string }) {
     queryKey: ["directory-children", fs.getRoot().id, path],
     queryFn: () => fs.listDirectory(path),
   });
-
-  const [isNewFolderDialogOpen, setIsNewFolderDialogOpen] = useState(false);
-  const [isNewFileDialogOpen, setIsNewFileDialogOpen] = useState(false);
 
   if (children.isLoading) {
     return <LoadingPage />;
@@ -102,64 +99,18 @@ export default function DirectoryViewer({ path }: { path: string }) {
             type={child.type}
             name={child.name}
             path={child.path}
-            onDelete={async () => {
-              if (child.hasActions) {
-                await fs.deleteFile(child.path);
-                children.refetch();
-              }
-            }}
+            onRefresh={() => children.refetch()}
           />
         ))}
 
-        {/* new directory or file */}
-        <Item
-          variant="outline"
-          className="bg-card max-w-75"
-          render={
-            <button
-              onClick={() => setIsNewFolderDialogOpen(true)}
-              className="no-underline cursor-pointer"
-            >
-              <ItemMedia>
-                <IconPlus className="size-5" />
-              </ItemMedia>
-              <ItemContent>
-                <ItemTitle>New Directory</ItemTitle>
-              </ItemContent>
-            </button>
-          }
-        />
-        <NewDirectoryDialog
-          fs={fs}
-          parent={path}
-          isOpen={isNewFolderDialogOpen}
-          setIsOpen={setIsNewFolderDialogOpen}
-          onCreate={() => children.refetch()}
-        />
-        <Item
-          variant="outline"
-          className="bg-card max-w-75"
-          render={
-            <button
-              onClick={() => setIsNewFileDialogOpen(true)}
-              className="no-underline cursor-pointer"
-            >
-              <ItemMedia>
-                <IconPlus className="size-5" />
-              </ItemMedia>
-              <ItemContent>
-                <ItemTitle>New File</ItemTitle>
-              </ItemContent>
-            </button>
-          }
-        />
-        <NewFileDialog
-          fs={fs}
-          parent={path}
-          isOpen={isNewFileDialogOpen}
-          setIsOpen={setIsNewFileDialogOpen}
-          onCreate={() => children.refetch()}
-        />
+        {(["file", "directory"] as const).map((type) => (
+          <CreateFileOrDirectoryItem
+            key={type}
+            parent={path}
+            type={type}
+            onRefresh={() => children.refetch()}
+          />
+        ))}
       </div>
     </div>
   );
@@ -169,15 +120,16 @@ function FileOrDirectoryItem({
   type,
   name,
   path,
-  onDelete,
+  onRefresh,
 }: {
   type: "file" | "directory";
   name: string;
   path: string;
-  onDelete: () => void;
+  onRefresh: () => void;
 }) {
   const fs = useFs();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
   return (
     <>
       <Item
@@ -227,17 +179,21 @@ function FileOrDirectoryItem({
                       <IconArrowRight />
                       Open
                     </DropdownMenuItem>
-                    {path && (
-                      <DropdownMenuItem
-                        onClick={() => {
-                          const downloadLink = fs.getFileDownloadLink(path);
-                          window.open(downloadLink, "_blank");
-                        }}
-                      >
-                        <IconDownload />
-                        Download
-                      </DropdownMenuItem>
-                    )}
+                    <DropdownMenuItem
+                      onClick={() => setIsRenameDialogOpen(true)}
+                    >
+                      <IconEdit />
+                      Rename
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        const downloadLink = fs.getFileDownloadLink(path);
+                        window.open(downloadLink, "_blank");
+                      }}
+                    >
+                      <IconDownload />
+                      Download
+                    </DropdownMenuItem>
                     <DropdownMenuItem
                       variant="destructive"
                       onClick={() => {
@@ -254,117 +210,192 @@ function FileOrDirectoryItem({
           </Link>
         }
       />
-      <AlertDialog
-        open={isDeleteDialogOpen}
+      <DeleteItemDialog
+        isOpen={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete <b>{name}</b>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" onClick={onDelete}>
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        path={path}
+        onRefresh={onRefresh}
+      />
+      <RenameItemDialog
+        isOpen={isRenameDialogOpen}
+        onOpenChange={setIsRenameDialogOpen}
+        path={path}
+        type={type}
+        onRefresh={onRefresh}
+      />
     </>
   );
 }
 
-function NewFileDialog({
-  fs,
-  parent,
+function DeleteItemDialog({
   isOpen,
-  setIsOpen,
-  onCreate,
+  onOpenChange,
+  path,
+  onRefresh,
 }: {
-  fs: RemoteFileSystem;
-  parent: string;
   isOpen: boolean;
-  setIsOpen: (open: boolean) => void;
-  onCreate: () => void;
+  onOpenChange: (open: boolean) => void;
+  path: string;
+  onRefresh: () => void;
 }) {
-  const [newFileName, setNewFileName] = useState("");
-  const createFile = async () => {
-    const newFilePath = parent + "/" + newFileName;
-    await fs.createFile(newFilePath);
-    setIsOpen(false);
-    onCreate();
-  };
+  const fs = useFs();
+  const basename = path.split("/").slice(-1)[0];
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Create New File</DialogTitle>
-          <DialogDescription>Enter a name for the new file.</DialogDescription>
-        </DialogHeader>
-        <FieldGroup>
-          <Field>
-            <Label htmlFor="new-file-name">File Name</Label>
-            <Input
-              name="new-file-name"
-              value={newFileName}
-              onChange={(e) => setNewFileName(e.target.value)}
-            />
-          </Field>
-        </FieldGroup>
-        <DialogFooter>
-          <DialogClose render={<Button variant="outline">Cancel</Button>} />
-          <Button onClick={createFile}>Create</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This will permanently delete <b>{basename}</b>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            variant="destructive"
+            onClick={async () => {
+              await fs.deleteFile(path);
+              onRefresh();
+            }}
+          >
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 
-function NewDirectoryDialog({
-  fs,
+function CreateFileOrDirectoryItem({
   parent,
-  isOpen,
-  setIsOpen,
-  onCreate,
+  type,
+  onRefresh,
 }: {
-  fs: RemoteFileSystem;
   parent: string;
-  isOpen: boolean;
-  setIsOpen: (open: boolean) => void;
-  onCreate: () => void;
+  type: "file" | "directory";
+  onRefresh: () => void;
 }) {
-  const [newDirectoryName, setNewDirectoryName] = useState("");
-  const createDirectory = async () => {
-    const newDirectoryPath = parent + "/" + newDirectoryName;
-    await fs.createDirectory(newDirectoryPath);
-    setIsOpen(false);
-    onCreate();
-  };
+  const fs = useFs();
+  const typeName = type === "file" ? "File" : "Directory";
+  const [isOpen, setIsOpen] = useState(false);
+  const [newName, setNewName] = useState("");
+  useEffect(() => {
+    if (!isOpen) {
+      setNewName("");
+    }
+  }, [isOpen]);
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <>
+      <Item
+        variant="outline"
+        className="bg-card max-w-75"
+        render={
+          <button
+            onClick={() => setIsOpen(true)}
+            className="no-underline cursor-pointer"
+          >
+            <ItemMedia>
+              <IconPlus className="size-5" />
+            </ItemMedia>
+            <ItemContent>
+              <ItemTitle>New {typeName}</ItemTitle>
+            </ItemContent>
+          </button>
+        }
+      />
+      <Dialog open={isOpen} onOpenChange={(open) => setIsOpen(open)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New {typeName}</DialogTitle>
+            <DialogDescription>
+              Enter a name for the new {typeName}.
+            </DialogDescription>
+          </DialogHeader>
+          <FieldGroup>
+            <Field>
+              <Label htmlFor="new-name">{typeName} Name</Label>
+              <Input
+                name="new-name"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+              />
+            </Field>
+          </FieldGroup>
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline">Cancel</Button>} />
+            <Button
+              onClick={async () => {
+                const newItemPath = parent + "/" + newName;
+                await (type === "file"
+                  ? fs.createFile(newItemPath)
+                  : fs.createDirectory(newItemPath));
+                close();
+                onRefresh();
+              }}
+            >
+              Create
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+function RenameItemDialog({
+  isOpen,
+  onOpenChange,
+  path,
+  type,
+  onRefresh,
+}: {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  path: string;
+  type: "file" | "directory";
+  onRefresh: () => void;
+}) {
+  const fs = useFs();
+  const typeName = type === "file" ? "File" : "Directory";
+  const [newName, setNewName] = useState("");
+  useEffect(() => {
+    if (!isOpen) {
+      setNewName("");
+    }
+  }, [isOpen]);
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create New Directory</DialogTitle>
+          <DialogTitle>Rename {typeName}</DialogTitle>
           <DialogDescription>
-            Enter a name for the new directory.
+            Enter a new name for the {typeName}.
           </DialogDescription>
         </DialogHeader>
         <FieldGroup>
           <Field>
-            <Label htmlFor="new-directory-name">Directory Name</Label>
+            <Label htmlFor="new-name">{typeName} Name</Label>
             <Input
-              name="new-directory-name"
-              value={newDirectoryName}
-              onChange={(e) => setNewDirectoryName(e.target.value)}
+              name="new-name"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
             />
           </Field>
         </FieldGroup>
         <DialogFooter>
           <DialogClose render={<Button variant="outline">Cancel</Button>} />
-          <Button onClick={createDirectory}>Create</Button>
+          <Button
+            onClick={async () => {
+              const newItemPath = [
+                ...path.split("/").slice(0, -1),
+                newName,
+              ].join("/");
+              await fs.moveFileOrDirectory(path, newItemPath);
+              onRefresh();
+            }}
+          >
+            Rename
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

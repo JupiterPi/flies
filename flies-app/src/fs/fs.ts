@@ -24,9 +24,11 @@ export interface RemoteFileSystem {
 
   readFile(path: string): Promise<ArrayBuffer | string>;
 
+  getFileDownloadLink(path: string): string;
+
   writeFile(path: string, content: ArrayBuffer | string): Promise<void>;
 
-  getFileDownloadLink(path: string): string;
+  moveFileOrDirectory(oldPath: string, newPath: string): Promise<void>;
 }
 
 // webdav client implementation
@@ -95,11 +97,15 @@ export class WebDAVClientFS implements RemoteFileSystem {
     return content as unknown as ArrayBuffer | string; // todo?
   }
 
+  getFileDownloadLink(path: string) {
+    return this.client.getFileDownloadLink(path);
+  }
+
   async writeFile(path: string, content: ArrayBuffer | string) {
     await this.client.putFileContents(path, content);
   }
 
-  getFileDownloadLink(path: string) {
-    return this.client.getFileDownloadLink(path);
+  async moveFileOrDirectory(oldPath: string, newPath: string) {
+    await this.client.moveFile(oldPath, newPath);
   }
 }
