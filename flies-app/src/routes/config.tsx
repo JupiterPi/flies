@@ -19,6 +19,7 @@ import { IconCheck } from "@tabler/icons-react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import z from "zod";
+import { FliesHomeLogo } from ".";
 
 export const Route = createFileRoute("/config")({
   component: RouteComponent,
@@ -95,7 +96,10 @@ function RouteComponent() {
 
   return (
     <div className="p-8 typeset flex flex-col gap-4">
-      <h1 className="-mb-4">Configuration</h1>
+      <div className="flex gap-4 items-center">
+        <FliesHomeLogo className="size-9" />
+        <h1 className="m-0">Configuration</h1>
+      </div>
       <div>
         Write your configuration in JSON format according to the schema (look in
         the source). The configuration is stored in local storage. You can also

@@ -20,6 +20,7 @@ import { createContext, useContext } from "react";
 import ExcalidrawViewer from "./-viewers/ExcalidrawViewer";
 import Viewer from "./-viewers/Viewer";
 import SchmierzettelViewer from "./-viewers/SchmierzettelViewer";
+import { FliesHomeLogo } from ".";
 
 export const Route = createFileRoute("/$")({
   component: RouteComponent,
@@ -147,10 +148,7 @@ function FileAssociationRouter({
             );
           } else if (fileViewer === "default") {
             return (
-              <object
-                data={downloadLink}
-                className="w-full h-[calc(100vh-69px)]" // todo: hardcoded navbar height
-              ></object>
+              <object data={downloadLink} className="w-full h-screen"></object>
             );
           }
         }}
@@ -191,6 +189,10 @@ export function PathBreadcrumbs({ path }: { path: string }) {
   return (
     <Breadcrumb>
       <BreadcrumbList>
+        <BreadcrumbItem>
+          <FliesHomeLogo className="size-5" />
+        </BreadcrumbItem>
+        <BreadcrumbSeparator />
         <BreadcrumbItem>
           <BreadcrumbLink
             render={

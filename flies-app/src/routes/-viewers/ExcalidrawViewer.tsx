@@ -22,11 +22,11 @@ export default function ExcalidrawViewer({
   const parsedContent = content.length > 0 ? JSON.parse(content) : undefined;
 
   return (
-    <div className="w-full h-[calc(100vh-69px)]">
+    <div className="w-full h-screen">
       {
         <Excalidraw
           renderTopRightUI={() => (
-            <div className="h-[40px] flex items-center gap-2">
+            <div className="h-[40px] flex items-center gap-2 ml-2">
               <Link
                 to="/$"
                 params={{

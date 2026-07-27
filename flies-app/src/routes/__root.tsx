@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import "../styles.css";
 import { ThemeProvider } from "#/components/theme-provider";
-import Navbar from "#/components/navbar";
 import { Toaster } from "#/components/ui/toast";
 
 export const Route = createRootRoute({
@@ -24,7 +23,6 @@ function RootComponent() {
       <HeadContent />
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
-          <Navbar />
           <Outlet />
           <Toaster />
         </ThemeProvider>

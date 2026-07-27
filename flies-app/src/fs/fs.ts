@@ -31,6 +31,33 @@ export interface RemoteFileSystem {
   moveFileOrDirectory(oldPath: string, newPath: string): Promise<void>;
 }
 
+// noop implementation
+
+export class NoopFS implements RemoteFileSystem {
+  constructor(private root: FliesRoot) {}
+  getRoot() {
+    return this.root;
+  }
+
+  async getFileOrDirectoryInfo() {
+    return null;
+  }
+  async listDirectory() {
+    return [];
+  }
+  async createFile() {}
+  async deleteFile() {}
+  async createDirectory() {}
+  async readFile() {
+    return "";
+  }
+  getFileDownloadLink() {
+    return "";
+  }
+  async writeFile() {}
+  async moveFileOrDirectory() {}
+}
+
 // webdav client implementation
 
 export class WebDAVClientFS implements RemoteFileSystem {

@@ -12,6 +12,7 @@ import {
   IconEdit,
   IconFile,
   IconFolder,
+  IconFolderRoot,
   IconFolderUp,
   IconPlus,
   IconTrash,
@@ -99,6 +100,7 @@ export default function DirectoryViewer({ path }: { path: string }) {
             type={child.type}
             name={child.name}
             path={child.path}
+            hasActions={child.hasActions}
             onRefresh={() => children.refetch()}
           />
         ))}
@@ -116,16 +118,20 @@ export default function DirectoryViewer({ path }: { path: string }) {
   );
 }
 
-function FileOrDirectoryItem({
+export function FileOrDirectoryItem({
   type,
   name,
   path,
+  hasActions,
   onRefresh,
+  isRoot = false,
 }: {
   type: "file" | "directory";
   name: string;
   path: string;
+  hasActions?: boolean;
   onRefresh: () => void;
+  isRoot?: boolean;
 }) {
   const fs = useFs();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -142,7 +148,9 @@ function FileOrDirectoryItem({
             className="no-underline flex flex-nowrap! justify-stretch"
           >
             <ItemMedia>
-              {type === "directory" ? (
+              {isRoot ? (
+                <IconFolderRoot className="size-5" />
+              ) : type === "directory" ? (
                 name === ".." ? (
                   <IconFolderUp className="size-5" />
                 ) : (
@@ -153,7 +161,7 @@ function FileOrDirectoryItem({
               )}
             </ItemMedia>
             <div className="flex-1 truncate">{name}</div>
-            {name !== ".." && (
+            {hasActions && (
               <ItemActions>
                 <DropdownMenu>
                   <DropdownMenuTrigger
