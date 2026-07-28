@@ -7,6 +7,7 @@ import {
 } from "#/components/ui/item";
 import {
   IconArrowRight,
+  IconChevronRight,
   IconDotsVertical,
   IconDownload,
   IconEdit,
@@ -161,6 +162,11 @@ export function FileOrDirectoryItem({
               )}
             </ItemMedia>
             <div className="flex-1 truncate">{name}</div>
+            {isRoot && (
+              <ItemActions>
+                <IconChevronRight className="size-5 opacity-75" />
+              </ItemActions>
+            )}
             {hasActions && (
               <ItemActions>
                 <DropdownMenu>
