@@ -3,7 +3,6 @@ import { Excalidraw } from "@excalidraw/excalidraw";
 import "@excalidraw/excalidraw/index.css";
 import { resolveTheme, useTheme } from "#/components/theme-provider";
 import { Link } from "@tanstack/react-router";
-import { useFs } from "../$";
 
 export default function ExcalidrawViewer({
   path,
@@ -16,7 +15,6 @@ export default function ExcalidrawViewer({
   setContent: (content: string) => void;
   SaveStatusIndicator: React.ReactNode;
 }) {
-  const fs = useFs();
   const { theme } = useTheme();
 
   const parsedContent = content.length > 0 ? JSON.parse(content) : undefined;
@@ -30,10 +28,7 @@ export default function ExcalidrawViewer({
               <Link
                 to="/$"
                 params={{
-                  _splat:
-                    fs.getRoot().id +
-                    "/" +
-                    path.split("/").slice(0, -1).join("/"),
+                  _splat: path.split("/").slice(0, -1).join("/"),
                 }}
                 className="no-underline text-inherit! opacity-50 hover:opacity-100 transition-opacity transition-duration-300"
               >

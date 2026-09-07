@@ -1,7 +1,3 @@
-import {
-  FileViewer,
-  readConfigurationFromLocalStorage,
-} from "#/data/configuration";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import TextViewer from "./-viewers/TextViewer";
@@ -15,12 +11,12 @@ import {
   BreadcrumbList,
   BreadcrumbSeparator,
 } from "#/components/ui/breadcrumb";
-import { WebDAVClientFS, type RemoteFileSystem } from "#/fs/fs";
-import { createContext, useContext } from "react";
 import ExcalidrawViewer from "./-viewers/ExcalidrawViewer";
 import Viewer from "./-viewers/Viewer";
 import SchmierzettelViewer from "./-viewers/SchmierzettelViewer";
+import { useFs } from "./__root";
 import { FliesHomeLogo } from ".";
+import React from "react";
 
 export const Route = createFileRoute("/$")({
   component: RouteComponent,
@@ -28,49 +24,21 @@ export const Route = createFileRoute("/$")({
 
 function RouteComponent() {
   const path = Route.useParams()._splat!;
-
-  const configuration = readConfigurationFromLocalStorage();
-  if (!configuration) {
-    return <ErrorPage>Invalid Flies configuration!</ErrorPage>;
-  }
-
-  const root = configuration.roots.find((r) => path.split("/")[0] === r.id);
-  if (!root) {
-    return <ErrorPage>No root found for path: {path}</ErrorPage>;
-  }
-  const remotePath = path.substring(root.id.length + 1);
-
-  const fs = new WebDAVClientFS(root);
-  return (
-    <FsContext value={fs}>
-      <FileAssociationRouter path={remotePath} configuration={configuration} />
-    </FsContext>
-  );
+  return <FileAssociationRouter path={path} />;
 }
 
-export const FsContext = createContext<RemoteFileSystem | null>(null);
+type FileViewer =
+  | "text"
+  | "markdown"
+  | "excalidraw"
+  | "schmierzettel"
+  | "default";
 
-export function useFs() {
-  const fs = useContext(FsContext);
-  if (!fs) {
-    throw new Error("useFs must be used within a FsContext.Provider");
-  }
-  return fs;
-}
-
-function FileAssociationRouter({
-  path,
-  configuration,
-}: {
-  path: string;
-  configuration: NonNullable<
-    ReturnType<typeof readConfigurationFromLocalStorage>
-  >;
-}) {
+function FileAssociationRouter({ path }: { path: string }) {
   const fs = useFs();
 
   const remoteFile = useQuery({
-    queryKey: ["remoteFile", fs.getRoot().id, path],
+    queryKey: ["remoteFile", path],
     queryFn: () => fs.getFileOrDirectoryInfo(path),
   });
 
@@ -92,19 +60,6 @@ function FileAssociationRouter({
 
   if (remoteFile.data.type === "file") {
     const fileViewer: FileViewer = (() => {
-      const fileViewerFromRootConfiguration = fs
-        .getRoot()
-        .fileTypeAssociations.find((fta) => path.endsWith(fta.extension));
-      if (fileViewerFromRootConfiguration)
-        return fileViewerFromRootConfiguration.viewer;
-
-      const fileViewerFromConfiguration =
-        configuration.fileTypeAssociations.find((fta) =>
-          path.endsWith(fta.extension),
-        );
-      if (fileViewerFromConfiguration)
-        return fileViewerFromConfiguration.viewer;
-
       if (path.endsWith(".txt")) return "text";
       if (path.endsWith(".md")) return "markdown";
       if (path.endsWith(".excalidraw")) return "excalidraw";
@@ -165,11 +120,7 @@ export function ErrorPage({ children }: { children: React.ReactNode }) {
       <div className="text-center text-lg font-semibold text-red-600">
         {children}
         <br />
-        Check your configuration{" "}
-        <Link to="/config" className="underline">
-          here
-        </Link>
-        .
+        Check your configuration! {/* // todo */}
       </div>
     </div>
   );
@@ -184,7 +135,6 @@ export function LoadingPage() {
 }
 
 export function PathBreadcrumbs({ path }: { path: string }) {
-  const fs = useFs();
   const pathSegments = path.split("/").filter((segment) => segment !== "");
   return (
     <Breadcrumb>
@@ -192,35 +142,16 @@ export function PathBreadcrumbs({ path }: { path: string }) {
         <BreadcrumbItem>
           <FliesHomeLogo className="size-5" />
         </BreadcrumbItem>
-        <BreadcrumbSeparator />
-        <BreadcrumbItem>
-          <BreadcrumbLink
-            render={
-              <Link
-                to="/$"
-                params={{
-                  _splat: fs.getRoot().id,
-                }}
-                className="text-base"
-              >
-                {fs.getRoot().name ?? fs.getRoot().id}
-              </Link>
-            }
-          />
-        </BreadcrumbItem>
         {pathSegments.map((segment, index) => (
-          <>
+          <React.Fragment key={index}>
             <BreadcrumbSeparator />
-            <BreadcrumbItem key={index}>
+            <BreadcrumbItem>
               <BreadcrumbLink
                 render={
                   <Link
                     to="/$"
                     params={{
-                      _splat:
-                        fs.getRoot().id +
-                        "/" +
-                        pathSegments.slice(0, index + 1).join("/"),
+                      _splat: pathSegments.slice(0, index + 1).join("/"),
                     }}
                     className="text-base"
                   >
@@ -229,7 +160,7 @@ export function PathBreadcrumbs({ path }: { path: string }) {
                 }
               />
             </BreadcrumbItem>
-          </>
+          </React.Fragment>
         ))}
       </BreadcrumbList>
     </Breadcrumb>

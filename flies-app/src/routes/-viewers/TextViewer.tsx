@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import { useFs } from "../$";
+import { useFs } from "../__root";
 
 export default function TextViewer({ path }: { path: string }) {
   const fs = useFs();
   const content = useQuery({
-    queryKey: ["text-file-content", fs.getRoot().id, path],
+    queryKey: ["text-file-content", path],
     queryFn: () => fs.readFile(path),
   });
   const contentStr = content.data

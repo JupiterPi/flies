@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import { LoadingPage, useFs } from "../$";
+import { LoadingPage } from "../$";
 import { useDebounce } from "@uidotdev/usehooks";
 import { useEffect, useState } from "react";
 import { IconCloudCheck, IconCloudUpload } from "@tabler/icons-react";
 import classNames from "classnames";
+import { useFs } from "../__root";
 
 const SAVE_DEBOUNCE_MS = 1000;
 
@@ -21,7 +22,7 @@ export default function Viewer({
   const fs = useFs();
 
   const queriedContent = useQuery({
-    queryKey: ["file-content", fs.getRoot().id, path],
+    queryKey: ["file-content", path],
     queryFn: () => fs.readFile(path),
   });
 
@@ -50,10 +51,7 @@ export default function Viewer({
   if (queriedContent.isLoading) {
     return <LoadingPage />;
   }
-  const queriedContentStr =
-    queriedContent.data! instanceof ArrayBuffer
-      ? new TextDecoder().decode(queriedContent.data!)
-      : (queriedContent.data as string);
+  const queriedContentStr = new TextDecoder().decode(queriedContent.data!);
   const content = contentInput === null ? queriedContentStr : contentInput;
 
   const SaveStatusIndicator = (

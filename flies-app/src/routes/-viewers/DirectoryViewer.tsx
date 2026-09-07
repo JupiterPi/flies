@@ -20,7 +20,7 @@ import {
 } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { LoadingPage, PathBreadcrumbs, useFs } from "../$";
+import { LoadingPage, PathBreadcrumbs } from "../$";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -51,12 +51,13 @@ import { Field, FieldGroup } from "#/components/ui/field";
 import { Label } from "#/components/ui/label";
 import { Input } from "#/components/ui/input";
 import { useEffect, useState } from "react";
+import { useFs } from "../__root";
 
 export default function DirectoryViewer({ path }: { path: string }) {
   const fs = useFs();
 
   const children = useQuery({
-    queryKey: ["directory-children", fs.getRoot().id, path],
+    queryKey: ["directory-children", path],
     queryFn: () => fs.listDirectory(path),
   });
 
@@ -144,8 +145,8 @@ export function FileOrDirectoryItem({
         className="bg-card w-75"
         render={
           <Link
-            to="/$"
-            params={{ _splat: fs.getRoot().id + path }}
+            to={path === "/" ? "/" : `/$`}
+            params={{ _splat: path }}
             className="no-underline flex flex-nowrap! justify-stretch"
           >
             <ItemMedia>
@@ -183,12 +184,7 @@ export function FileOrDirectoryItem({
                   />
                   <DropdownMenuContent onClick={(e) => e.preventDefault()}>
                     <DropdownMenuItem
-                      render={
-                        <Link
-                          to="/$"
-                          params={{ _splat: fs.getRoot().id + path }}
-                        />
-                      }
+                      render={<Link to="/$" params={{ _splat: path }} />}
                     >
                       <IconArrowRight />
                       Open

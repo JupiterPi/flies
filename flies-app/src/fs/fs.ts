@@ -1,11 +1,10 @@
-import type { FliesRoot } from "#/data/configuration";
-import { createClient, type FileStat, type WebDAVClient } from "webdav";
+import type { RouterClient } from "@orpc/server";
+import type { router } from "flies-server";
+import { serverUrl } from "#/routes/__root";
 
 // generic interface
 
 export interface RemoteFileSystem {
-  getRoot(): FliesRoot;
-
   getFileOrDirectoryInfo(
     path: string,
   ): Promise<
@@ -31,108 +30,72 @@ export interface RemoteFileSystem {
   moveFileOrDirectory(oldPath: string, newPath: string): Promise<void>;
 }
 
-// noop implementation
+export class ServerFS implements RemoteFileSystem {
+  private server: RouterClient<router>;
 
-export class NoopFS implements RemoteFileSystem {
-  constructor(private root: FliesRoot) {}
-  getRoot() {
-    return this.root;
-  }
-
-  async getFileOrDirectoryInfo() {
-    return null;
-  }
-  async listDirectory() {
-    return [];
-  }
-  async createFile() {}
-  async deleteFile() {}
-  async createDirectory() {}
-  async readFile() {
-    return "";
-  }
-  getFileDownloadLink() {
-    return "";
-  }
-  async writeFile() {}
-  async moveFileOrDirectory() {}
-}
-
-// webdav client implementation
-
-export class WebDAVClientFS implements RemoteFileSystem {
-  client: WebDAVClient;
-
-  constructor(private root: FliesRoot) {
-    this.client = createClient(root.webdavEndpoint, root.webdavCredentials);
-  }
-
-  getRoot() {
-    return this.root;
+  constructor(client: RouterClient<router>) {
+    this.server = client;
   }
 
   async getFileOrDirectoryInfo(path: string) {
-    const stat = await (async () => {
-      try {
-        return (await this.client.stat(path)) as unknown as FileStat;
-      } catch (e) {
-        if (e instanceof Error && e.message.includes("404")) {
-          return null;
-        }
-        throw e;
-      }
-    })();
-    if (stat === null) {
-      return null;
-    }
-
-    if (stat.type === "directory") {
+    const info = await this.server.fs.getInfo({ path });
+    if (info.type === "file") {
+      return {
+        type: "file" as const,
+        downloadLink: this.getFileDownloadLink(path),
+      };
+    } else if (info.type === "directory") {
       return {
         type: "directory" as const,
       };
-    } else {
-      return {
-        type: "file" as const,
-        downloadLink: this.client.getFileDownloadLink(path),
-      };
     }
+    return null;
   }
 
   async listDirectory(path: string) {
-    const children = await this.client.getDirectoryContents(path);
-    return children.map((child) => ({
-      type: child.type,
-      name: child.filename.split("/").slice(-1)[0],
-      path: child.filename,
-    }));
+    return await this.server.fs.listDir({ path });
   }
 
   async createFile(path: string) {
-    await this.client.putFileContents(path, "");
+    await this.server.fs.createEmptyFile({ path });
   }
 
   async deleteFile(path: string) {
-    await this.client.deleteFile(path);
+    await this.server.fs.delete({ path });
   }
 
   async createDirectory(path: string) {
-    await this.client.createDirectory(path);
+    await this.server.fs.createDirectory({ path });
   }
 
   async readFile(path: string) {
-    const content = await this.client.getFileContents(path);
-    return content as unknown as ArrayBuffer | string; // todo?
+    const file = await this.server.fs.downloadFile({ path });
+    try {
+      const content = await new Response(file).arrayBuffer();
+      return content;
+    } catch (e) {
+      console.error("Error reading file:", e);
+      throw e;
+    }
   }
 
   getFileDownloadLink(path: string) {
-    return this.client.getFileDownloadLink(path);
+    this.server.fs.downloadFile; // ensure that the downloadFile route is registered
+    return serverUrl + "/api/fs/download/" + encodeURIComponent(path);
   }
 
   async writeFile(path: string, content: ArrayBuffer | string) {
-    await this.client.putFileContents(path, content);
+    const contentArrayBuffer =
+      typeof content === "string" ? new TextEncoder().encode(content) : content;
+    await this.server.fs.uploadFile({
+      path,
+      file: new File([contentArrayBuffer], "file.blob", {
+        type: "application/octet-stream",
+      }),
+    });
   }
 
   async moveFileOrDirectory(oldPath: string, newPath: string) {
-    await this.client.moveFile(oldPath, newPath);
+    await this.server.fs.move({ oldPath, newPath });
   }
 }

@@ -1,16 +1,29 @@
-import { readConfigurationFromLocalStorage } from "#/data/configuration";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { FileOrDirectoryItem } from "./-viewers/DirectoryViewer";
-import { NoopFS } from "#/fs/fs";
-import { FsContext } from "./$";
-import { Button } from "#/components/ui/button";
-import { IconAdjustments } from "@tabler/icons-react";
 import { ModeToggle } from "#/components/theme-toggle";
 import classNames from "classnames";
+import { useQuery } from "@tanstack/react-query";
+import { useServerQueries } from "./__root";
+import { ErrorPage, LoadingPage } from "./$";
 
 export const Route = createFileRoute("/")({ component: Home });
 
 export function Home() {
+  const server = useServerQueries();
+  const {
+    data: topLevelDirectories,
+    isLoading: directoriesLoading,
+    error,
+  } = useQuery(server.user.getAccessibleTopLevelDirectories.queryOptions());
+
+  if (error) {
+    return (
+      <ErrorPage>
+        Error fetching top-level directories: {String(error)}
+      </ErrorPage>
+    );
+  }
+
   return (
     <>
       <div className="absolute top-4 right-4 z-50">
@@ -24,27 +37,20 @@ export function Home() {
 
         {/* roots */}
         <div className="flex flex-col gap-2">
-          {readConfigurationFromLocalStorage()?.roots.map((root) => (
-            <FsContext value={new NoopFS(root)}>
+          {directoriesLoading && <LoadingPage />}
+          {topLevelDirectories &&
+            topLevelDirectories.map((dir) => (
               <FileOrDirectoryItem
-                key={root.id}
+                key={dir}
                 type="directory"
-                name={root.name ?? root.id}
-                path={""}
+                name={"/" + dir}
+                path={dir}
                 hasActions={false}
                 onRefresh={() => {}}
                 isRoot={true}
               />
-            </FsContext>
-          ))}
+            ))}
         </div>
-
-        <Link to="/config">
-          <Button>
-            <IconAdjustments />
-            Configure
-          </Button>
-        </Link>
       </div>
     </>
   );
