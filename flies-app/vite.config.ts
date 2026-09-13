@@ -1,6 +1,5 @@
 import { defineConfig } from "vite";
 import { devtools } from "@tanstack/devtools-vite";
-import { nitro } from "nitro/vite";
 
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
 
@@ -14,8 +13,8 @@ const config = defineConfig({
     tailwindcss(),
     tanstackRouter({ target: "react", autoCodeSplitting: true }),
     viteReact(),
-    nitro(),
   ],
+  appType: "spa",
 });
 
 export default config;

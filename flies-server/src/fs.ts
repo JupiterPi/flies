@@ -6,7 +6,7 @@ import { openapi } from "@orpc/openapi";
 import * as fs from "node:fs/promises";
 import type { ResponseHeadersHandlerPluginContext } from "@orpc/server/plugins";
 
-const fsRootDir = `${env.DATA_DIR}/fs`;
+export const fsRootDir = `${env.DATA_DIR}/fs`;
 
 export const fsRoutes = os.meta(openapi({ prefix: "/fs" })).router({
   getInfo: os

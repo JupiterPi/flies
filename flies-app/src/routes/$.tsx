@@ -17,6 +17,7 @@ import SchmierzettelViewer from "./-viewers/SchmierzettelViewer";
 import { useFs } from "./__root";
 import { FliesHomeLogo } from ".";
 import React from "react";
+import { resolveFileViewer } from "flies-server";
 
 export const Route = createFileRoute("/$")({
   component: RouteComponent,
@@ -26,13 +27,6 @@ function RouteComponent() {
   const path = Route.useParams()._splat!;
   return <FileAssociationRouter path={path} />;
 }
-
-type FileViewer =
-  | "text"
-  | "markdown"
-  | "excalidraw"
-  | "schmierzettel"
-  | "default";
 
 function FileAssociationRouter({ path }: { path: string }) {
   const fs = useFs();
@@ -59,20 +53,13 @@ function FileAssociationRouter({ path }: { path: string }) {
   }
 
   if (remoteFile.data.type === "file") {
-    const fileViewer: FileViewer = (() => {
-      if (path.endsWith(".txt")) return "text";
-      if (path.endsWith(".md")) return "markdown";
-      if (path.endsWith(".excalidraw")) return "excalidraw";
-      if (path.endsWith("Schmierzettel")) return "schmierzettel";
-      return "default";
-    })();
-
     const downloadLink = remoteFile.data.downloadLink;
+    const fileViewer = resolveFileViewer(path);
     return (
       <Viewer
         path={path}
         children={(content, setContent, SaveStatusIndicator) => {
-          if (fileViewer === "text") {
+          if (fileViewer === "plaintext") {
             return <TextViewer path={path} />;
           } else if (fileViewer === "markdown") {
             return (
@@ -101,10 +88,8 @@ function FileAssociationRouter({ path }: { path: string }) {
                 SaveStatusIndicator={SaveStatusIndicator}
               />
             );
-          } else if (fileViewer === "default") {
-            return (
-              <object data={downloadLink} className="w-full h-screen"></object>
-            );
+          } else if (fileViewer === undefined) {
+            window.open(downloadLink, "_blank");
           }
         }}
       ></Viewer>

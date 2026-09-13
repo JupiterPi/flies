@@ -9,8 +9,7 @@
     "dev": "vite dev --port 3000",
     "generate-routes": "tsr generate",
     "build": "vite build",
-    "preview": "vite preview",
-    "webdav-devserver": "rclone serve webdav ../test-files --addr localhost:8080 --baseurl test-files --allow-origin=*"
+    "preview": "vite preview"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
@@ -34,7 +33,6 @@
     "classnames": "^2.5.1",
     "clsx": "^2.1.1",
     "masonic": "^4.1.0",
-    "nitro": "^3.0.260610-beta",
     "parse-duration": "^2.1.8",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
