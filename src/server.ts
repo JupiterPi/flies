@@ -25,11 +25,6 @@ export default createServerEntry({
         if (isRawFileRequested || isUnhandledFileType) {
           const filePath = decodeURIComponent(url.pathname);
           const fsFile = Bun.file(`${fsRootDir}${filePath}`);
-          console.log(
-            "fsFile exists:",
-            `${fsRootDir}${filePath}`,
-            await fsFile.exists(),
-          );
           if (await fsFile.exists()) {
             const fileName = filePath.split("/").pop() || "file";
             return new Response(fsFile.stream(), {
