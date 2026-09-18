@@ -15,77 +15,23 @@ import {
   IconEdit,
   IconPlus,
 } from "@tabler/icons-react";
-import { createContext, useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import z from "zod";
 import { Masonry } from "masonic";
 import { Toggle } from "#/components/ui/toggle";
 import { useServer } from "#/client/orpc";
 import { useLocation } from "@tanstack/react-router";
 import { produce } from "immer";
+import { Note, useSchmierzettelData } from "./Schmierzettel";
 
-// data
-
-export const Note = z.object({
-  id: z.string().default(() => crypto.randomUUID()),
-  createdAt: z.number(),
-  modifiedAt: z.number(),
-  content: z.string(),
-});
-export type Note = z.infer<typeof Note>;
-
-export const ArchivedNote = z.object({
-  id: z.string().default(() => crypto.randomUUID()),
-  archivedAt: z.number(),
-  content: z.string(),
-});
-export type ArchivedNote = z.infer<typeof ArchivedNote>;
-
-export const SchmierzettelData = z.object({
-  _: z.literal("https://github.com/JupiterPi/flies Schmierzettel data v1"),
-  notes: z.array(Note).default([]),
-  archivedNotes: z.array(ArchivedNote).default([]),
-});
-export type SchmierzettelData = z.infer<typeof SchmierzettelData>;
-
-export default function Schmierzettel({
-  data,
-  setData,
-}: {
-  data: SchmierzettelData;
-  setData: (data: SchmierzettelData) => void;
-}) {
-  return (
-    <SchmierzettelDataContext value={{ data, setData }}>
-      <SchmierzettelApp />
-    </SchmierzettelDataContext>
-  );
-}
-
-export const SchmierzettelDataContext = createContext<{
-  data: SchmierzettelData;
-  setData: (data: SchmierzettelData) => void;
-} | null>(null);
-
-export function useSchmierzettelData() {
-  const context = useContext(SchmierzettelDataContext);
-  if (!context) {
-    throw new Error(
-      "useSchmierzettelData must be used within a SchmierzettelDataProvider",
-    );
-  }
-  return context;
-}
-
-// app
-
-function SchmierzettelApp() {
+export function SchmierzettelUI() {
   return <SchmierzettelNotes />;
 }
 
 function SchmierzettelNotes() {
   const { data } = useSchmierzettelData();
   return (
-    <div className="typeset">
+    <div className="typeset mt-4">
       <h1>Notes</h1>
       {data.notes.length === 0 && (
         <div className="text-muted-foreground italic">No notes yet.</div>

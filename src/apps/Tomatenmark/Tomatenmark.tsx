@@ -1,31 +1,32 @@
-import { PathBreadcrumbs } from "../$";
 import { Milkdown, MilkdownProvider, useEditor } from "@milkdown/react";
 import { Crepe } from "@milkdown/crepe";
 import "@milkdown/crepe/theme/common/style.css";
 import "@milkdown/crepe/theme/frame-dark.css";
 import "./milkdown.css";
 import { useState } from "react";
+import { createApp, type AppProps } from "../apps";
 
-export default function MarkdownViewer({
-  path,
-  content,
-  setContent,
+export const App = createApp<null>({
+  associatedFileExtensions: [".md"],
+  dataSchema: null,
+  component: Tomatenmark,
+});
+
+export default function Tomatenmark({
+  rawData,
+  setRawData,
+  PathBreadcrumbs,
   SaveStatusIndicator,
-}: {
-  path: string;
-  content: string;
-  setContent: (content: string) => void;
-  SaveStatusIndicator: React.ReactNode;
-}) {
+}: AppProps<null>) {
   return (
     <MilkdownProvider>
       {/* status bar */}
       <div className="mt-8 ml-[60px] flex gap-4 items-center">
-        <PathBreadcrumbs path={path} />
+        {PathBreadcrumbs}
         {SaveStatusIndicator}
       </div>
 
-      <MilkdownEditor initialMarkdown={content} onChange={setContent} />
+      <MilkdownEditor initialMarkdown={rawData} onChange={setRawData} />
     </MilkdownProvider>
   );
 }

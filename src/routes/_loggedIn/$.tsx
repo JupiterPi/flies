@@ -1,9 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import TextViewer from "./-viewers/TextViewer";
-import DirectoryViewer from "./-viewers/DirectoryViewer";
+import DirectoryViewer from "./-DirectoryViewer";
 import { IconLoader } from "@tabler/icons-react";
-import MarkdownViewer from "./-viewers/MarkdownViewer";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -11,89 +9,53 @@ import {
   BreadcrumbList,
   BreadcrumbSeparator,
 } from "#/components/ui/breadcrumb";
-import ExcalidrawViewer from "./-viewers/ExcalidrawViewer";
-import Viewer from "./-viewers/Viewer";
-import SchmierzettelViewer from "./-viewers/SchmierzettelViewer";
 import { FliesHomeLogo } from ".";
 import React from "react";
-import { resolveFileViewer } from "#/data/fileTypeAssociations";
 import { useServer } from "#/client/orpc";
+import { apps, AppWrapper } from "#/apps/apps";
 
 export const Route = createFileRoute("/_loggedIn/$")({
+  ssr: false,
   component: RouteComponent,
 });
 
 function RouteComponent() {
-  const path = Route.useParams()._splat!;
-  return <FileAssociationRouter path={path} />;
-}
-
-function FileAssociationRouter({ path }: { path: string }) {
   const { fs } = useServer();
+  const path = Route.useParams()._splat!;
 
-  const remoteFile = useQuery({
+  const remoteItem = useQuery({
     queryKey: ["remoteFile", path],
     queryFn: () => fs.getFileOrDirectoryInfo(path),
   });
 
-  if (remoteFile.isLoading) {
+  if (remoteItem.isLoading) {
     return <LoadingPage />;
   }
 
-  if (remoteFile.isError) {
+  if (remoteItem.isError) {
     return (
       <ErrorPage>
-        Error fetching remote file: {String(remoteFile.error)}
+        Error fetching remote file or directory: {String(remoteItem.error)}
       </ErrorPage>
     );
   }
 
-  if (!remoteFile.data) {
+  if (!remoteItem.data) {
     return <ErrorPage>File or directory not found</ErrorPage>;
   }
 
-  if (remoteFile.data.type === "file") {
-    const downloadLink = remoteFile.data.downloadLink;
-    const fileViewer = resolveFileViewer(path);
-    return (
-      <Viewer
-        path={path}
-        children={(content, setContent, SaveStatusIndicator) => {
-          if (fileViewer === "plaintext") {
-            return <TextViewer path={path} />;
-          } else if (fileViewer === "markdown") {
-            return (
-              <MarkdownViewer
-                path={path}
-                content={content}
-                setContent={setContent}
-                SaveStatusIndicator={SaveStatusIndicator}
-              />
-            );
-          } else if (fileViewer === "excalidraw") {
-            return (
-              <ExcalidrawViewer
-                path={path}
-                content={content}
-                setContent={setContent}
-                SaveStatusIndicator={SaveStatusIndicator}
-              />
-            );
-          } else if (fileViewer === "schmierzettel") {
-            return (
-              <SchmierzettelViewer
-                path={path}
-                content={content}
-                setContent={setContent}
-                SaveStatusIndicator={SaveStatusIndicator}
-              />
-            );
-          } else if (fileViewer === undefined) {
-            window.open(downloadLink, "_blank");
-          }
-        }}
-      ></Viewer>
-    );
+  if (remoteItem.data.type === "file") {
+    const downloadLink = remoteItem.data.downloadLink;
+
+    // resolve associated app
+    for (const [_, app] of Object.entries(apps)) {
+      if (app.associatedFileExtensions.some((ext) => path.endsWith(ext))) {
+        return <AppWrapper app={app} path={path} />;
+      }
+    }
+
+    // if no app is found, open the raw file
+    window.open(downloadLink, "_blank");
   } else {
     return <DirectoryViewer path={path} />;
   }
@@ -149,5 +111,25 @@ export function PathBreadcrumbs({ path }: { path: string }) {
         ))}
       </BreadcrumbList>
     </Breadcrumb>
+  );
+}
+
+export function DefaultAppLayout({
+  PathBreadcrumbs,
+  SaveStatusIndicator,
+  children,
+}: {
+  PathBreadcrumbs: React.ReactNode;
+  SaveStatusIndicator?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="m-8 flex flex-col gap-4">
+      <div className="flex gap-4 items-center">
+        {PathBreadcrumbs}
+        {SaveStatusIndicator}
+      </div>
+      {children}
+    </div>
   );
 }

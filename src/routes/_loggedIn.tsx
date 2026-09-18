@@ -2,7 +2,7 @@ import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ErrorPage } from "./_loggedIn/$";
 import { useServer } from "#/client/orpc";
-import { useClientConfig } from "#/client/config";
+import { useClientConfig } from "#/client/clientConfig";
 
 export const Route = createFileRoute("/_loggedIn")({
   ssr: false, // because window.prompt is used

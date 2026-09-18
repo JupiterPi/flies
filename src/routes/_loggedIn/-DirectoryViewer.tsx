@@ -20,7 +20,7 @@ import {
 } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { LoadingPage, PathBreadcrumbs } from "../$";
+import { DefaultAppLayout, LoadingPage, PathBreadcrumbs } from "./$";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -94,9 +94,8 @@ export default function DirectoryViewer({ path }: { path: string }) {
   });
 
   return (
-    <div className="p-8">
-      <PathBreadcrumbs path={path} />
-      <div className="flex flex-wrap gap-2 mt-6">
+    <DefaultAppLayout PathBreadcrumbs={<PathBreadcrumbs path={path} />}>
+      <div className="flex flex-wrap gap-2 mt-2">
         {childElements.map((child) => (
           <FileOrDirectoryItem
             key={child.path}
@@ -117,7 +116,7 @@ export default function DirectoryViewer({ path }: { path: string }) {
           />
         ))}
       </div>
-    </div>
+    </DefaultAppLayout>
   );
 }
 

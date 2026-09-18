@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { FileOrDirectoryItem } from "./-viewers/DirectoryViewer";
+import { FileOrDirectoryItem } from "./-DirectoryViewer";
 import { ModeToggle } from "#/components/theme-toggle";
 import classNames from "classnames";
 import { useQuery } from "@tanstack/react-query";

@@ -1,4 +1,3 @@
-import "#/polyfill";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { createFileRoute } from "@tanstack/react-router";
 import { onError } from "@orpc/server";

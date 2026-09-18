@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Toast as ToastPrimitive } from "@base-ui/react/toast";
 
-import { cn } from "#/lib/utils";
+import { cn } from "#/utils";
 import { Button } from "@/components/ui/button";
 import {
   IconX,
