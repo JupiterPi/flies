@@ -14,7 +14,10 @@ import { ORPCClientProvider } from "#/client/orpc";
 export const Route = createRootRoute({
   ssr: false,
   head: () => ({
-    meta: [{ title: "Flies" }],
+    meta: [
+      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { title: "Flies" },
+    ],
     links: [{ rel: "icon", href: "/flies-logo.svg" }],
   }),
   shellComponent: RootShell,
