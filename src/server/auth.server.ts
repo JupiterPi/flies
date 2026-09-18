@@ -1,5 +1,5 @@
-import type { User } from "./authStore.server";
-import * as AuthStore from "./authStore.server";
+import type { User } from "./stores/authStore.server";
+import * as AuthStore from "./stores/authStore.server";
 import { defaultPermissions, type UserPermissions } from "./permissions";
 
 function getUserPermissions(user: User): UserPermissions {

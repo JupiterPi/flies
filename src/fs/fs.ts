@@ -1,5 +1,5 @@
 import type { RouterClient } from "@orpc/server";
-import type { router } from "#/server/index.server";
+import type { router } from "#/server/api/index.server";
 
 // generic interface
 

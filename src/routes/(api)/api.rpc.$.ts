@@ -2,7 +2,7 @@ import "#/polyfill";
 
 import { RPCHandler } from "@orpc/server/fetch";
 import { createFileRoute } from "@tanstack/react-router";
-import { router } from "#/server/index.server";
+import { router } from "#/server/api/index.server";
 import {
   CORSHandlerPlugin,
   RequestHeadersHandlerPlugin,

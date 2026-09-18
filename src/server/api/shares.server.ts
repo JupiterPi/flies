@@ -2,8 +2,8 @@ import { openapi } from "@orpc/openapi";
 import { ORPCError, os } from "@orpc/server";
 import { auth } from "./users.server";
 import z from "zod";
-import { hasAdminPermission } from "./permissions";
-import * as AuthStore from "./authStore.server";
+import { hasAdminPermission } from "../permissions";
+import * as AuthStore from "../stores/authStore.server";
 
 export const sharesRoutes = os.meta(openapi({ prefix: "/shares" })).router({
   createShare: os

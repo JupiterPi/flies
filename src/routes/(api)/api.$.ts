@@ -4,7 +4,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { onError } from "@orpc/server";
 import { OpenAPIReferenceHandlerPlugin } from "@orpc/openapi/plugins";
 import { ZodToJsonSchemaConverter } from "@orpc/zod";
-import { router } from "#/server/index.server";
+import { router } from "#/server/api/index.server";
 import { env } from "#/env";
 import { OpenAPIGenerator } from "@orpc/openapi";
 import {

@@ -44,6 +44,8 @@ async function routeRawFileRequest(request: Request) {
             status: 403,
           });
         }
+        // todo: when no session cookie is detected, instead of failing, it would be nice to instead
+        // return the app with a login prompt, and then it would retry the request with the session cookie
         const fsFile = Bun.file(`${fsRootDir}${filePath}`);
         if (await fsFile.exists()) {
           const fileName = filePath.split("/").pop() || "file";

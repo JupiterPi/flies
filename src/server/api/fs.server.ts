@@ -10,7 +10,7 @@ import {
   type UserPermissions,
   hasReadPermission,
   hasWritePermission,
-} from "./permissions";
+} from "../permissions";
 
 export const fsRootDir = `${env.DATA_DIR}/fs`;
 

@@ -1,4 +1,4 @@
-import type { router } from "#/server/index.server";
+import type { router } from "#/server/api/index.server";
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
 import type { RouterClient } from "@orpc/server";
