@@ -15,6 +15,16 @@ const handler = new RPCHandler(router, {
     new RequestHeadersHandlerPlugin(),
     new ResponseHeadersHandlerPlugin(),
   ],
+  interceptors: [
+    async ({ next }) => {
+      try {
+        return await next();
+      } catch (error) {
+        console.error("Error in RPC handler:", error);
+        throw error;
+      }
+    },
+  ],
 });
 
 async function handle({ request }: { request: Request }) {

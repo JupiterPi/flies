@@ -4,25 +4,12 @@ import {
   Dialog,
   DialogClose,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "#/components/ui/dialog";
-import { Field, FieldLabel } from "#/components/ui/field";
-import { Input } from "#/components/ui/input";
-import {
-  Item,
-  ItemActions,
-  ItemContent,
-  ItemMedia,
-  ItemTitle,
-} from "#/components/ui/item";
 import { Textarea } from "#/components/ui/textarea";
 import {
-  IconBellCheck,
-  IconBellOff,
   IconBellPlus,
   IconBellRinging,
   IconEdit,
@@ -32,26 +19,33 @@ import { createContext, useContext, useEffect, useState } from "react";
 import z from "zod";
 import { Masonry } from "masonic";
 import { Toggle } from "#/components/ui/toggle";
-import { toast } from "#/components/ui/toast";
+import { useServer } from "#/client/orpc";
+import { useLocation } from "@tanstack/react-router";
+import { produce } from "immer";
 
-export const SchmierzettelNote = z.object({
-  timestamp: z.number(),
-  text: z.string(),
+// data
+
+export const Note = z.object({
+  id: z.string().default(() => crypto.randomUUID()),
+  createdAt: z.number(),
+  modifiedAt: z.number(),
+  content: z.string(),
 });
-export type SchmierzettelNote = z.infer<typeof SchmierzettelNote>;
+export type Note = z.infer<typeof Note>;
+
+export const ArchivedNote = z.object({
+  id: z.string().default(() => crypto.randomUUID()),
+  archivedAt: z.number(),
+  content: z.string(),
+});
+export type ArchivedNote = z.infer<typeof ArchivedNote>;
+
 export const SchmierzettelData = z.object({
   _: z.literal("https://github.com/JupiterPi/flies Schmierzettel data v1"),
-  ntfyshUrl: z.url().nullable(),
-  notes: z.array(SchmierzettelNote),
-  archivedNotes: z.array(SchmierzettelNote),
+  notes: z.array(Note).default([]),
+  archivedNotes: z.array(ArchivedNote).default([]),
 });
 export type SchmierzettelData = z.infer<typeof SchmierzettelData>;
-export const newSchmierzettelData: SchmierzettelData = {
-  _: "https://github.com/JupiterPi/flies Schmierzettel data v1",
-  ntfyshUrl: null,
-  notes: [],
-  archivedNotes: [],
-};
 
 export default function Schmierzettel({
   data,
@@ -62,8 +56,7 @@ export default function Schmierzettel({
 }) {
   return (
     <SchmierzettelDataContext value={{ data, setData }}>
-      <NtfyshConfigurer />
-      <SchmierzettelNotes />
+      <SchmierzettelApp />
     </SchmierzettelDataContext>
   );
 }
@@ -83,96 +76,10 @@ export function useSchmierzettelData() {
   return context;
 }
 
-function NtfyshConfigurer() {
-  const { data, setData } = useSchmierzettelData();
-  const [ntfyshUrlInput, setNtfyshUrlInput] = useState(data.ntfyshUrl ?? "");
-  return (
-    <Item variant="outline" size="sm" className="max-w-md">
-      <ItemMedia>
-        {data.ntfyshUrl ? (
-          <IconBellCheck className="size-5" />
-        ) : (
-          <IconBellOff className="size-5" />
-        )}
-      </ItemMedia>
-      <ItemContent>
-        <ItemTitle>
-          {data.ntfyshUrl
-            ? `Sending notifications to ${new URL(data.ntfyshUrl).hostname}`
-            : "Not connected to a notification service"}
-        </ItemTitle>
-      </ItemContent>
-      <ItemActions>
-        <Dialog>
-          <DialogTrigger
-            render={
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setNtfyshUrlInput(data.ntfyshUrl ?? "")}
-              >
-                Configure
-              </Button>
-            }
-          />
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Configure ntfy.sh</DialogTitle>
-              <DialogDescription>
-                Schmierzettel can send notifications via{" "}
-                <a href="https://ntfy.sh" target="_blank">
-                  ntfy.sh
-                </a>
-                , which you can also self-host. Configure the instance and topic
-                for notifications below.
-              </DialogDescription>
-            </DialogHeader>
-            <Field>
-              <FieldLabel>ntfy.sh URL</FieldLabel>
-              <Input
-                type="url"
-                value={ntfyshUrlInput}
-                onChange={(e) => setNtfyshUrlInput(e.target.value)}
-                placeholder="https://ntfy.sh/your-topic"
-                className="input input-bordered w-full"
-              />
-            </Field>
-            <DialogFooter>
-              <DialogClose render={<Button variant="outline">Cancel</Button>} />
-              {data.ntfyshUrl !== null && (
-                <DialogClose
-                  render={
-                    <Button
-                      variant="destructive"
-                      onClick={() => setData({ ...data, ntfyshUrl: null })}
-                    >
-                      Disconnect
-                    </Button>
-                  }
-                />
-              )}
-              <DialogClose
-                render={
-                  <Button
-                    type="submit"
-                    disabled={
-                      ntfyshUrlInput === data.ntfyshUrl ||
-                      ntfyshUrlInput.trim() === ""
-                    }
-                    onClick={() => {
-                      setData({ ...data, ntfyshUrl: ntfyshUrlInput.trim() });
-                    }}
-                  >
-                    Save
-                  </Button>
-                }
-              />
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </ItemActions>
-    </Item>
-  );
+// app
+
+function SchmierzettelApp() {
+  return <SchmierzettelNotes />;
 }
 
 function SchmierzettelNotes() {
@@ -200,12 +107,12 @@ function SchmierzettelNotes() {
   );
 }
 
-function NoteCard({ note }: { note: SchmierzettelNote }) {
+function NoteCard({ note }: { note: Note }) {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   return (
     <Card size="sm" className="w-full h-fit">
       <CardContent className="flex-1 overflow-y-auto">
-        <div className="whitespace-pre-line">{note.text}</div>
+        <div className="whitespace-pre-line">{note.content}</div>
       </CardContent>
       <CardFooter className="justify-end">
         <Button variant="outline" onClick={() => setEditDialogOpen(true)}>
@@ -246,16 +153,26 @@ function CaptureOrEditNoteDialog({
 }: {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  existingNote: SchmierzettelNote | null;
+  existingNote: Note | null;
 }) {
+  const { client } = useServer();
+  const location = useLocation();
   const { data, setData } = useSchmierzettelData();
   const [noteTextInput, setNoteTextInput] = useState("");
   useEffect(() => {
     if (isOpen) {
-      setNoteTextInput(existingNote?.text ?? "");
+      setNoteTextInput(existingNote?.content ?? "");
     }
   }, [isOpen]);
-  const notificationIntervals = ["10s", "5m", "10m", "15m", "30m", "1h", "3h"];
+  const notificationIntervals: Record<string, number> = {
+    "10s": 10 * 1000,
+    "5m": 5 * 60 * 1000,
+    "10m": 10 * 60 * 1000,
+    "15m": 15 * 60 * 1000,
+    "30m": 30 * 60 * 1000,
+    "1h": 1 * 60 * 60 * 1000,
+    "3h": 3 * 60 * 60 * 1000,
+  };
   const [notifications, setNotifications] = useState<string[]>([]);
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -268,9 +185,9 @@ function CaptureOrEditNoteDialog({
           value={noteTextInput}
           onChange={(e) => setNoteTextInput(e.target.value)}
         />
-        {data.ntfyshUrl !== null && existingNote === null && (
+        {existingNote === null && (
           <div className="flex gap-2 flex-wrap">
-            {notificationIntervals.map((interval) => (
+            {Object.entries(notificationIntervals).map(([interval, _]) => (
               <Toggle
                 key={interval}
                 variant="outline"
@@ -318,62 +235,29 @@ function CaptureOrEditNoteDialog({
               <Button
                 disabled={noteTextInput.trim() === ""}
                 onClick={async () => {
-                  const note = {
+                  const note = Note.parse({
                     ...existingNote,
-                    text: noteTextInput,
-                    timestamp: Date.now(),
-                  };
-                  if (notifications.length > 0) {
-                    let success = true;
-                    for (const notificationInterval of notifications) {
-                      try {
-                        const res = await fetch(data.ntfyshUrl!, {
-                          method: "POST",
-                          body: note.text,
-                          headers: {
-                            At: notificationInterval,
-                            Click: window.location.href,
-                          },
-                        });
-                        if (!res.ok) {
-                          console.error(
-                            `Failed to send notification for interval ${notificationInterval}: ${res.status} ${res.statusText}`,
-                          );
-                          toast.add({
-                            title: "Notification Failed",
-                            description: `Failed to send notification for interval ${notificationInterval}: ${res.status} ${res.statusText}`,
-                            type: "error",
-                          });
-                          success = false;
-                        }
-                      } catch (e) {
-                        console.error(
-                          `Failed to send notification for interval ${notificationInterval}: ${e}`,
-                        );
-                        toast.add({
-                          title: "Notification Failed",
-                          description: `Failed to send notification for interval ${notificationInterval}: ${e}`,
-                          type: "error",
-                        });
-                        success = false;
-                      }
-                    }
-                    if (success) {
-                      toast.add({
-                        title: `Notifications sent for ${notifications.join(
-                          ", ",
-                        )}`,
-                        type: "success",
-                      });
-                    }
+                    content: noteTextInput,
+                    createdAt: existingNote?.createdAt ?? Date.now(),
+                    modifiedAt: Date.now(),
+                  } satisfies z.input<typeof Note>);
+                  for (const notification of notifications) {
+                    client.notifications.createNotification({
+                      message: noteTextInput,
+                      origin: `Schmierzettel note ${note.id} at ${location.pathname}`,
+                      url: window.location.href, // todo: highlight note by id
+                      scheduledFor:
+                        Date.now() + notificationIntervals[notification],
+                    });
                   }
-                  setData({
-                    ...data,
-                    notes: [
-                      ...data.notes.filter((n) => n !== existingNote),
-                      note,
-                    ],
-                  });
+                  setData(
+                    produce(data, (data) => {
+                      data.notes = data.notes.filter(
+                        (n) => n.id !== existingNote?.id,
+                      );
+                      data.notes.push(note);
+                    }),
+                  );
                 }}
               >
                 Save

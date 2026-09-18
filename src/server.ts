@@ -4,6 +4,9 @@ import { env } from "./env";
 import { resolveFileViewer } from "./data/fileTypeAssociations";
 import { hasReadPermission } from "./server/permissions";
 import { authFromRequest } from "./server/auth.server";
+import { periodicallyCheckAndSendNotifications } from "./server/notificationsService.server";
+
+periodicallyCheckAndSendNotifications();
 
 const fsRootDir = `${env.DATA_DIR}/fs`;
 

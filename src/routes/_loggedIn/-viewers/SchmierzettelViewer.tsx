@@ -1,7 +1,6 @@
 import z from "zod";
 import { ErrorPage, PathBreadcrumbs } from "../$";
 import Schmierzettel, {
-  newSchmierzettelData,
   SchmierzettelData,
 } from "./schmierzettel/Schmierzettel";
 
@@ -18,7 +17,11 @@ export default function SchmierzettelViewer({
 }) {
   const parsedData = (() => {
     try {
-      return content.length > 0 ? JSON.parse(content) : newSchmierzettelData;
+      return content.length > 0
+        ? JSON.parse(content)
+        : SchmierzettelData.parse({
+            _: "https://github.com/JupiterPi/flies Schmierzettel data v1",
+          } satisfies z.input<typeof SchmierzettelData>);
     } catch (error) {
       return null;
     }

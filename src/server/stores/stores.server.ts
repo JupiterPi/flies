@@ -32,6 +32,7 @@ export class Store<T extends z.ZodObject> {
         throw new Error(`Failed to read store from ${this.file.name}: ${e}`);
       }
     }
+    await this.save();
   }
 
   read() {
@@ -52,10 +53,9 @@ export class Store<T extends z.ZodObject> {
 
     // write to file after a delay to avoid excessive writes
     if (this.writeTimeout) clearTimeout(this.writeTimeout);
-    this.writeTimeout = setTimeout(async () => {
-      await this.file.write(JSON.stringify(this.data, null, 2));
-    }, this.writeDelayMs);
+    this.writeTimeout = setTimeout(() => this.save(), this.writeDelayMs);
   }
-
-  // todo: could implement an async function writeNow()
+  private async save() {
+    await this.file.write(JSON.stringify(this.data, null, 2));
+  }
 }
