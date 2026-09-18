@@ -2,6 +2,14 @@ import type { User } from "./authStore.server";
 import * as AuthStore from "./authStore.server";
 import { defaultPermissions, type UserPermissions } from "./permissions";
 
+function getUserPermissions(user: User): UserPermissions {
+  return {
+    admin: user.admin,
+    readPaths: "*",
+    writePaths: "*",
+  };
+}
+
 // sessions
 
 const sessions = new Map<
@@ -21,15 +29,13 @@ function getSession(sessionId: string) {
   return session;
 }
 
-export function createSession({
-  user,
-  permissions,
-}: {
-  user: User;
-  permissions: UserPermissions;
-}) {
+export function createSession(user: User) {
   const sessionId = crypto.randomUUID();
-  sessions.set(sessionId, { sessionStart: new Date(), user, permissions });
+  sessions.set(sessionId, {
+    sessionStart: new Date(),
+    user,
+    permissions: getUserPermissions(user),
+  });
   return sessionId;
 }
 
@@ -45,14 +51,31 @@ export async function authFromRequest(
   >;
 
   // try to authenticate from various sources
-  const authFromSessionHeader: AuthenticationMethod = async () => {
+  const authFromAuthHeader: AuthenticationMethod = async () => {
     if (!authHeader) return null;
-    if (!authHeader.startsWith("Bearer ")) {
-      return { error: "Invalid Authorization header: Expected Bearer token" };
+    if (authHeader.startsWith("Basic ")) {
+      const credentials = atob(authHeader.slice("Basic ".length)).split(":");
+      if (credentials.length !== 2) {
+        return { error: "Invalid Basic auth header" };
+      }
+      const [username, password] = credentials;
+      const user = AuthStore.verifyUser(username, password);
+      if (!user) return { error: "Invalid username or password" };
+      return {
+        user,
+        permissions: getUserPermissions(user),
+      };
     }
-    const session = getSession(authHeader.slice("Bearer ".length));
-    if (!session) return { error: "Invalid or expired session (Auth header)" };
-    return session;
+    if (authHeader.startsWith("Bearer ")) {
+      const session = getSession(authHeader.slice("Bearer ".length));
+      if (!session)
+        return { error: "Invalid or expired session (Auth header)" };
+      return session;
+    }
+    return {
+      error:
+        "Invalid Authorization header: Expected Basic (with username/password) or Bearer (with session id) scheme",
+    };
   };
   const authFromSessionCookie: AuthenticationMethod = async () => {
     if (!cookieHeader) return null;
@@ -74,7 +97,7 @@ export async function authFromRequest(
     };
   };
   const auth =
-    (await authFromSessionHeader()) ||
+    (await authFromAuthHeader()) ||
     (await authFromSessionCookie()) ||
     (await authFromShareQueryParam());
 

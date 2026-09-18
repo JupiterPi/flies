@@ -8,6 +8,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "../styles.css";
 import { ThemeProvider } from "#/components/theme-provider";
 import { Toaster } from "#/components/ui/toast";
+import { ClientConfigProvider } from "#/client/config";
+import { ORPCClientProvider } from "#/client/orpc";
 
 export const Route = createRootRoute({
   ssr: false,
@@ -38,10 +40,14 @@ const queryClient = new QueryClient();
 function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <Outlet />
-        <Toaster />
-      </ThemeProvider>
+      <ClientConfigProvider>
+        <ORPCClientProvider>
+          <ThemeProvider>
+            <Outlet />
+            <Toaster />
+          </ThemeProvider>
+        </ORPCClientProvider>
+      </ClientConfigProvider>
     </QueryClientProvider>
   );
 }

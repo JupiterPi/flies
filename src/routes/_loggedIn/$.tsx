@@ -14,12 +14,12 @@ import {
 import ExcalidrawViewer from "./-viewers/ExcalidrawViewer";
 import Viewer from "./-viewers/Viewer";
 import SchmierzettelViewer from "./-viewers/SchmierzettelViewer";
-import { useFs } from "../_auth";
 import { FliesHomeLogo } from ".";
 import React from "react";
 import { resolveFileViewer } from "#/data/fileTypeAssociations";
+import { useServer } from "#/client/orpc";
 
-export const Route = createFileRoute("/_auth/$")({
+export const Route = createFileRoute("/_loggedIn/$")({
   component: RouteComponent,
 });
 
@@ -29,7 +29,7 @@ function RouteComponent() {
 }
 
 function FileAssociationRouter({ path }: { path: string }) {
-  const fs = useFs();
+  const { fs } = useServer();
 
   const remoteFile = useQuery({
     queryKey: ["remoteFile", path],

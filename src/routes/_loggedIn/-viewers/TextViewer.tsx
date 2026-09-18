@@ -1,8 +1,8 @@
+import { useServer } from "#/client/orpc";
 import { useQuery } from "@tanstack/react-query";
-import { useFs } from "../../_auth";
 
 export default function TextViewer({ path }: { path: string }) {
-  const fs = useFs();
+  const { fs } = useServer();
   const content = useQuery({
     queryKey: ["text-file-content", path],
     queryFn: () => fs.readFile(path),

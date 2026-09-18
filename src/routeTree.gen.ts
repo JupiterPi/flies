@@ -9,25 +9,25 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as AuthRouteImport } from './routes/_auth'
-import { Route as AuthIndexRouteImport } from './routes/_auth/index'
-import { Route as AuthSplatRouteImport } from './routes/_auth/$'
+import { Route as LoggedInRouteImport } from './routes/_loggedIn'
+import { Route as LoggedInIndexRouteImport } from './routes/_loggedIn/index'
+import { Route as LoggedInSplatRouteImport } from './routes/_loggedIn/$'
 import { Route as apiApiSplatRouteImport } from './routes/(api)/api.$'
 import { Route as apiApiRpcSplatRouteImport } from './routes/(api)/api.rpc.$'
 
-const AuthRoute = AuthRouteImport.update({
-  id: '/_auth',
+const LoggedInRoute = LoggedInRouteImport.update({
+  id: '/_loggedIn',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthIndexRoute = AuthIndexRouteImport.update({
+const LoggedInIndexRoute = LoggedInIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => AuthRoute,
+  getParentRoute: () => LoggedInRoute,
 } as any)
-const AuthSplatRoute = AuthSplatRouteImport.update({
+const LoggedInSplatRoute = LoggedInSplatRouteImport.update({
   id: '/$',
   path: '/$',
-  getParentRoute: () => AuthRoute,
+  getParentRoute: () => LoggedInRoute,
 } as any)
 const apiApiSplatRoute = apiApiSplatRouteImport.update({
   id: '/(api)/api/$',
@@ -41,22 +41,22 @@ const apiApiRpcSplatRoute = apiApiRpcSplatRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof AuthIndexRoute
-  '/$': typeof AuthSplatRoute
+  '/': typeof LoggedInIndexRoute
+  '/$': typeof LoggedInSplatRoute
   '/api/$': typeof apiApiSplatRoute
   '/api/rpc/$': typeof apiApiRpcSplatRoute
 }
 export interface FileRoutesByTo {
-  '/$': typeof AuthSplatRoute
-  '/': typeof AuthIndexRoute
+  '/$': typeof LoggedInSplatRoute
+  '/': typeof LoggedInIndexRoute
   '/api/$': typeof apiApiSplatRoute
   '/api/rpc/$': typeof apiApiRpcSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/_auth': typeof AuthRouteWithChildren
-  '/_auth/$': typeof AuthSplatRoute
-  '/_auth/': typeof AuthIndexRoute
+  '/_loggedIn': typeof LoggedInRouteWithChildren
+  '/_loggedIn/$': typeof LoggedInSplatRoute
+  '/_loggedIn/': typeof LoggedInIndexRoute
   '/(api)/api/$': typeof apiApiSplatRoute
   '/(api)/api/rpc/$': typeof apiApiRpcSplatRoute
 }
@@ -67,41 +67,41 @@ export interface FileRouteTypes {
   to: '/$' | '/' | '/api/$' | '/api/rpc/$'
   id:
     | '__root__'
-    | '/_auth'
-    | '/_auth/$'
-    | '/_auth/'
+    | '/_loggedIn'
+    | '/_loggedIn/$'
+    | '/_loggedIn/'
     | '/(api)/api/$'
     | '/(api)/api/rpc/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  AuthRoute: typeof AuthRouteWithChildren
+  LoggedInRoute: typeof LoggedInRouteWithChildren
   apiApiSplatRoute: typeof apiApiSplatRoute
   apiApiRpcSplatRoute: typeof apiApiRpcSplatRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/_auth': {
-      id: '/_auth'
+    '/_loggedIn': {
+      id: '/_loggedIn'
       path: ''
       fullPath: '/'
-      preLoaderRoute: typeof AuthRouteImport
+      preLoaderRoute: typeof LoggedInRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_auth/': {
-      id: '/_auth/'
+    '/_loggedIn/': {
+      id: '/_loggedIn/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof AuthIndexRouteImport
-      parentRoute: typeof AuthRoute
+      preLoaderRoute: typeof LoggedInIndexRouteImport
+      parentRoute: typeof LoggedInRoute
     }
-    '/_auth/$': {
-      id: '/_auth/$'
+    '/_loggedIn/$': {
+      id: '/_loggedIn/$'
       path: '/$'
       fullPath: '/$'
-      preLoaderRoute: typeof AuthSplatRouteImport
-      parentRoute: typeof AuthRoute
+      preLoaderRoute: typeof LoggedInSplatRouteImport
+      parentRoute: typeof LoggedInRoute
     }
     '/(api)/api/$': {
       id: '/(api)/api/$'
@@ -120,20 +120,22 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface AuthRouteChildren {
-  AuthSplatRoute: typeof AuthSplatRoute
-  AuthIndexRoute: typeof AuthIndexRoute
+interface LoggedInRouteChildren {
+  LoggedInSplatRoute: typeof LoggedInSplatRoute
+  LoggedInIndexRoute: typeof LoggedInIndexRoute
 }
 
-const AuthRouteChildren: AuthRouteChildren = {
-  AuthSplatRoute: AuthSplatRoute,
-  AuthIndexRoute: AuthIndexRoute,
+const LoggedInRouteChildren: LoggedInRouteChildren = {
+  LoggedInSplatRoute: LoggedInSplatRoute,
+  LoggedInIndexRoute: LoggedInIndexRoute,
 }
 
-const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+const LoggedInRouteWithChildren = LoggedInRoute._addFileChildren(
+  LoggedInRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
-  AuthRoute: AuthRouteWithChildren,
+  LoggedInRoute: LoggedInRouteWithChildren,
   apiApiSplatRoute: apiApiSplatRoute,
   apiApiRpcSplatRoute: apiApiRpcSplatRoute,
 }

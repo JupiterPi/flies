@@ -4,7 +4,7 @@ import { useDebounce } from "@uidotdev/usehooks";
 import { useEffect, useState } from "react";
 import { IconCloudCheck, IconCloudUpload } from "@tabler/icons-react";
 import classNames from "classnames";
-import { useFs } from "../../_auth";
+import { useServer } from "#/client/orpc";
 
 const SAVE_DEBOUNCE_MS = 1000;
 
@@ -19,7 +19,7 @@ export default function Viewer({
     SaveStatusIndicator: React.ReactNode,
   ) => React.ReactNode;
 }) {
-  const fs = useFs();
+  const { fs } = useServer();
 
   const queriedContent = useQuery({
     queryKey: ["file-content", path],

@@ -3,18 +3,18 @@ import { FileOrDirectoryItem } from "./-viewers/DirectoryViewer";
 import { ModeToggle } from "#/components/theme-toggle";
 import classNames from "classnames";
 import { useQuery } from "@tanstack/react-query";
-import { useServerQueries } from "../_auth";
 import { ErrorPage, LoadingPage } from "./$";
+import { useServer } from "#/client/orpc";
 
-export const Route = createFileRoute("/_auth/")({ component: Home });
+export const Route = createFileRoute("/_loggedIn/")({ component: Home });
 
 export function Home() {
-  const server = useServerQueries();
+  const { queries } = useServer();
   const {
     data: topLevelDirectories,
     isLoading: directoriesLoading,
     error,
-  } = useQuery(server.user.getAccessibleTopLevelDirectories.queryOptions());
+  } = useQuery(queries.user.getAccessibleTopLevelDirectories.queryOptions());
 
   if (error) {
     return (

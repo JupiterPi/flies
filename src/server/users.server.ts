@@ -1,9 +1,7 @@
-import z from "zod";
 import { ORPCError, os } from "@orpc/server";
 import { openapi } from "@orpc/openapi";
 import type { ResponseHeadersHandlerPluginContext } from "@orpc/server/plugins";
 import type { RequestHeadersHandlerPluginContext } from "@orpc/server/plugins";
-import * as AuthStore from "./authStore.server";
 import { setCookie } from "@orpc/server/helpers";
 import {
   authFromRequest,
@@ -31,24 +29,14 @@ export const auth = os
   });
 
 export const userRoutes = os.meta(openapi({ prefix: "/user" })).router({
-  login: os
-    .route({ method: "POST", path: "/login" })
+  createSession: os
+    .route({ method: "POST", path: "/create-session" })
     .$context<ServerContext>()
-    .input(z.object({ username: z.string(), password: z.string() }))
-    .handler(async ({ context, input }) => {
-      const user = await AuthStore.verifyUser(input.username, input.password);
-      if (!user)
-        throw new ORPCError("UNAUTHORIZED", {
-          message: "Invalid username or password",
-        });
-      const sessionId = createSession({
-        user,
-        permissions: {
-          admin: user.admin,
-          readPaths: "*",
-          writePaths: "*",
-        },
-      });
+    .use(auth)
+    .handler(({ context }) => {
+      const user = context.user;
+      if (!user) throw new ORPCError("UNAUTHORIZED");
+      const sessionId = createSession(user);
       setCookie(context.resHeaders, "sessionId", sessionId, {
         maxAge: sessionTimeoutMs / 1000,
         httpOnly: true,

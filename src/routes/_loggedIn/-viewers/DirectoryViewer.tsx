@@ -51,11 +51,11 @@ import { Field, FieldGroup } from "#/components/ui/field";
 import { Label } from "#/components/ui/label";
 import { Input } from "#/components/ui/input";
 import { useEffect, useState } from "react";
-import { useFs } from "../../_auth";
 import { resolveFileViewer } from "#/data/fileTypeAssociations";
+import { useServer } from "#/client/orpc";
 
 export default function DirectoryViewer({ path }: { path: string }) {
-  const fs = useFs();
+  const { fs } = useServer();
 
   const children = useQuery({
     queryKey: ["directory-children", path],
@@ -136,7 +136,7 @@ export function FileOrDirectoryItem({
   onRefresh: () => void;
   isRoot?: boolean;
 }) {
-  const fs = useFs();
+  const { fs } = useServer();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
 
@@ -265,7 +265,7 @@ function DeleteItemDialog({
   path: string;
   onRefresh: () => void;
 }) {
-  const fs = useFs();
+  const { fs } = useServer();
   const basename = path.split("/").slice(-1)[0];
   return (
     <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
@@ -302,7 +302,7 @@ function CreateFileOrDirectoryItem({
   type: "file" | "directory";
   onRefresh: () => void;
 }) {
-  const fs = useFs();
+  const { fs } = useServer();
   const typeName = type === "file" ? "File" : "Directory";
   const [isOpen, setIsOpen] = useState(false);
   const [newName, setNewName] = useState("");
@@ -382,7 +382,7 @@ function RenameItemDialog({
   type: "file" | "directory";
   onRefresh: () => void;
 }) {
-  const fs = useFs();
+  const { fs } = useServer();
   const typeName = type === "file" ? "File" : "Directory";
   const [newName, setNewName] = useState("");
   useEffect(() => {
