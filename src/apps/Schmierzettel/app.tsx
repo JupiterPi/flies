@@ -31,6 +31,7 @@ class SchmierzettelApp extends FullApp<
   }
 
   override async runFullAppServerHandler(
+    abortSignal: AbortSignal,
     operationsBasedFile: OperationsBasedFile<
       typeof SchmierzettelData,
       typeof operations
@@ -38,6 +39,7 @@ class SchmierzettelApp extends FullApp<
   ) {
     createServerOnlyFn(() => {
       startCheckingAndSendingNotifications(
+        abortSignal,
         this.instanceInfo,
         operationsBasedFile,
       );

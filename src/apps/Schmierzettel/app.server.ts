@@ -10,12 +10,16 @@ type _OperationsBasedFile = OperationsBasedFile<
 >;
 
 export const startCheckingAndSendingNotifications = (
+  abortSignal: AbortSignal,
   appInstanceInfo: AppInstanceInfo,
   operationsBasedFile: _OperationsBasedFile,
 ) => {
-  setInterval(() => {
+  const interval = setInterval(() => {
     checkAndSendNotifications(appInstanceInfo, operationsBasedFile);
-  }, 1000 * 15); // every 15 seconds
+  }, 1000 * 15); // every 15 seconds // todo tmp
+  abortSignal.addEventListener("abort", () => {
+    clearInterval(interval);
+  });
 };
 
 async function checkAndSendNotifications(

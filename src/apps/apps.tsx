@@ -96,12 +96,12 @@ export abstract class App {
 
   protected abstract AppComponent: React.ComponentType<AppProps>;
 
-  get runServerHandler() {
+  runServerHandler(abortSignal: AbortSignal) {
     return createServerOnlyFn(async () => {
-      await this._runServerHandler();
+      await this._runServerHandler(abortSignal);
     });
   }
-  protected async _runServerHandler() {}
+  protected async _runServerHandler(_abortSignal: AbortSignal) {}
 }
 
 export type AppProps = {

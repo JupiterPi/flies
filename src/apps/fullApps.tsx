@@ -66,18 +66,19 @@ export abstract class FullApp<
     FullAppProps<schema, operations>
   >;
 
-  override async _runServerHandler() {
+  override async _runServerHandler(abortSignal: AbortSignal) {
     createServerOnlyFn(async () => {
       const operationsBasedFile = await OperationsBasedFile.init(
         this.instanceInfo.path,
         this,
       );
       operationsBasedFiles.set(this.instanceInfo.path, operationsBasedFile);
-      await this.runFullAppServerHandler(operationsBasedFile);
+      await this.runFullAppServerHandler(abortSignal, operationsBasedFile);
     })();
   }
 
   protected async runFullAppServerHandler(
+    _abortSignal: AbortSignal,
     _operationsBasedFile: OperationsBasedFile<schema, operations>,
   ) {}
 }
