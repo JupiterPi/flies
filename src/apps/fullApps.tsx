@@ -1,10 +1,12 @@
 import z from "zod";
 import { JsonApp } from "./jsonApps";
 import { dispatchOperation, type Operation } from "./operations";
-import type { AppInstanceInfo, AppSaveStatus } from "./apps";
+import type { AppInstanceInfo } from "./apps";
 import { useServer } from "#/client/orpc";
 import { OperationsBasedFile, operationsBasedFiles } from "./fullApps.server";
 import { createServerOnlyFn } from "@tanstack/react-start";
+import { useEffect, useState } from "react";
+import { LoadingPage } from "#/routes/_loggedIn/$";
 
 export abstract class FullApp<
   schema extends z.ZodObject,
@@ -20,17 +22,28 @@ export abstract class FullApp<
     super(appDisplayName, instanceInfo, dataSchema, newFileData);
   }
 
-  override JsonAppComponent = ({
-    data,
-    saveStatus,
-  }: {
-    data: z.infer<schema>;
-    setData: (
-      data: z.infer<schema> | ((prev: z.infer<schema>) => z.infer<schema>),
-    ) => void;
-    saveStatus: AppSaveStatus;
-  }) => {
+  override JsonAppComponent = () => {
     const client = useServer().client;
+
+    const [data, setData] = useState<z.infer<schema> | null>(null);
+    useEffect(() => {
+      const loadData = async () => {
+        const iterator = await client.fullApps.getLiveData(
+          {
+            path: this.instanceInfo.path,
+          },
+          { context: { retry: Number.POSITIVE_INFINITY } },
+        );
+        for await (const newData of iterator) {
+          setData(newData);
+        }
+      };
+      loadData();
+    }, []);
+    if (data === null) {
+      return <LoadingPage />;
+    }
+
     const _dispatchOperation = async <opName extends keyof operations>(
       opName: opName,
       input: z.infer<operations[opName]["input"]>,
@@ -43,7 +56,6 @@ export abstract class FullApp<
 
     return (
       <this.FullAppComponent
-        saveStatus={saveStatus}
         data={data}
         dispatchOperation={_dispatchOperation}
       />
@@ -79,5 +91,4 @@ export type FullAppProps<
     opName: opName,
     input: z.infer<operations[opName]["input"]>,
   ) => Promise<void>;
-  saveStatus: AppSaveStatus;
 };

@@ -60,11 +60,15 @@ export abstract class JsonApp<schema extends z.ZodObject> extends App {
     );
   };
 
-  protected abstract JsonAppComponent: React.ComponentType<{
-    data: z.infer<schema>;
-    setData: (
-      data: z.infer<schema> | ((prev: z.infer<schema>) => z.infer<schema>),
-    ) => void;
-    saveStatus: AppSaveStatus;
-  }>;
+  protected abstract JsonAppComponent: React.ComponentType<
+    JsonAppProps<schema>
+  >;
 }
+
+export type JsonAppProps<schema extends z.ZodObject> = {
+  data: z.infer<schema>;
+  setData: (
+    data: z.infer<schema> | ((prev: z.infer<schema>) => z.infer<schema>),
+  ) => void;
+  saveStatus: AppSaveStatus;
+};

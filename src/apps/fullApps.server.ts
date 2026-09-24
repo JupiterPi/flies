@@ -1,7 +1,7 @@
 import { auth } from "#/server/api/users.server";
-import { hasWritePermission } from "#/server/permissions";
+import { hasReadPermission, hasWritePermission } from "#/server/permissions";
 import { openapi } from "@orpc/openapi";
-import { ORPCError, os } from "@orpc/server";
+import { asyncIteratorObject, ORPCError, os } from "@orpc/server";
 import z from "zod";
 import {
   applyOperation,
@@ -74,6 +74,39 @@ export const operationsBasedFiles = new Map<
 >();
 
 export const fullAppRoutes = os.meta(openapi({ prefix: "/full-apps" })).router({
+  getLiveData: os
+    .use(auth)
+    .route({ method: "GET", path: "/live-data" })
+    .input(z.object({ path: z.string() }))
+    .output(asyncIteratorObject(z.any()))
+    .handler(async function* ({ context, input, signal }) {
+      if (!hasReadPermission(context.permissions, input.path)) {
+        throw new ORPCError("FORBIDDEN", {
+          message: "You do not have permission to read this file.",
+        });
+      }
+      const file = operationsBasedFiles.get(input.path);
+      if (!file) {
+        throw new ORPCError("NOT_FOUND", {
+          message: `No operations-based file found for path: ${input.path}`,
+        });
+      }
+
+      let newData = false;
+      let data = file.read();
+      file.addChangeListener((d) => {
+        newData = true;
+        data = d;
+      });
+      while (true) {
+        yield data;
+        newData = false;
+        while (!newData) {
+          signal?.throwIfAborted();
+          await new Promise((resolve) => setTimeout(resolve, 10));
+        }
+      }
+    }),
   dispatchOperation: os
     .use(auth)
     .route({ method: "POST", path: "/dispatch-operation" })

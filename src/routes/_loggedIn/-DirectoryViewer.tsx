@@ -211,7 +211,7 @@ export function FileOrDirectoryItem({
   );
 
   const needsActualNavigation =
-    type === "file" && instantiateApp({ path }) !== null;
+    type === "file" && instantiateApp({ path }) === null;
   return (
     <>
       <Item

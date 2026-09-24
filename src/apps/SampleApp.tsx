@@ -39,12 +39,10 @@ class SampleApp extends FullApp<typeof SampleSchema, typeof sampleOperations> {
   override FullAppComponent = ({
     data,
     dispatchOperation,
-    saveStatus,
   }: FullAppProps<typeof SampleSchema, typeof sampleOperations>) => {
     return (
       <DefaultAppLayout
         PathBreadcrumbs={<PathBreadcrumbs path={this.instanceInfo.path} />}
-        SaveStatusIndicator={this.SaveStatusIndicator(saveStatus)}
       >
         <h1>Sample App!</h1>
         <p>someField: {data.someField}</p>

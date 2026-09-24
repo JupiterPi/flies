@@ -5,6 +5,7 @@ import type { RouterClient } from "@orpc/server";
 import { createContext, useContext, useMemo } from "react";
 import { useClientConfig } from "./clientConfig";
 import { createTanstackQueryUtils } from "@orpc/tanstack-query";
+import { RetryLinkPlugin } from "@orpc/client/plugins";
 
 export const ORPCClientContext = createContext<{
   client: RouterClient<router>;
@@ -28,6 +29,7 @@ export function ORPCClientProvider({
             : "",
         };
       },
+      plugins: [new RetryLinkPlugin()],
     });
     return createORPCClient(link);
   }, []);
