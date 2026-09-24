@@ -1,3 +1,6 @@
+import { env } from "#/env";
+import { joinPath } from "#/utils";
+import type { AppInstanceInfo } from "../apps";
 import type { OperationsBasedFile } from "../fullApps.server";
 import type { operations, SchmierzettelData } from "./data";
 
@@ -7,14 +10,16 @@ type _OperationsBasedFile = OperationsBasedFile<
 >;
 
 export const startCheckingAndSendingNotifications = (
+  appInstanceInfo: AppInstanceInfo,
   operationsBasedFile: _OperationsBasedFile,
 ) => {
   setInterval(() => {
-    checkAndSendNotifications(operationsBasedFile);
+    checkAndSendNotifications(appInstanceInfo, operationsBasedFile);
   }, 1000 * 15); // every 15 seconds
 };
 
 async function checkAndSendNotifications(
+  appInstanceInfo: AppInstanceInfo,
   operationsBasedFile: _OperationsBasedFile,
 ) {
   const ntfyshUrl = operationsBasedFile.read().ntfyshUrl;
@@ -39,7 +44,7 @@ async function checkAndSendNotifications(
         method: "POST",
         body: notification.note.content,
         headers: {
-          Click: "", // todo: click url
+          Click: `${env.serverUrl}/${joinPath(appInstanceInfo.path)}`,
         },
       });
       if (!res.ok) {

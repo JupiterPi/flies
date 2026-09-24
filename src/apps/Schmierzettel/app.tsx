@@ -37,7 +37,10 @@ class SchmierzettelApp extends FullApp<
     >,
   ) {
     createServerOnlyFn(() => {
-      startCheckingAndSendingNotifications(operationsBasedFile);
+      startCheckingAndSendingNotifications(
+        this.instanceInfo,
+        operationsBasedFile,
+      );
     })();
   }
 
