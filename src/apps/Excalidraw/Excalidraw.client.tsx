@@ -6,14 +6,17 @@ import { Link } from "@tanstack/react-router";
 import type { AppProps } from "../apps";
 
 export default function ExcalidrawViewer({
+  data,
+  setData,
   path,
-  rawData,
-  setRawData,
   SaveStatusIndicator,
-}: AppProps<null>) {
+}: Pick<AppProps, "data" | "setData"> & {
+  path: string;
+  SaveStatusIndicator: React.ReactNode;
+}) {
   const { theme } = useTheme();
 
-  const parsedContent = rawData.length > 0 ? JSON.parse(rawData) : undefined;
+  const parsedContent = data.length > 0 ? JSON.parse(data) : undefined;
 
   return (
     <div className="w-full h-screen">
@@ -43,7 +46,7 @@ export default function ExcalidrawViewer({
               appState,
               files,
             };
-            setRawData(JSON.stringify(excalidrawSave, null, 2));
+            setData(JSON.stringify(excalidrawSave, null, 2));
           }}
           initialData={
             parsedContent

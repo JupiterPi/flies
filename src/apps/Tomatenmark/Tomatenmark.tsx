@@ -4,31 +4,37 @@ import "@milkdown/crepe/theme/common/style.css";
 import "@milkdown/crepe/theme/frame-dark.css";
 import "./milkdown.css";
 import { useState } from "react";
-import { createApp, type AppProps } from "../apps";
+import {
+  App,
+  AppAssociation,
+  type AppInstanceInfo,
+  type AppProps,
+} from "../apps";
+import { PathBreadcrumbs } from "#/routes/_loggedIn/$";
 
-export const App = createApp<null>({
-  associatedFileExtensions: [".md"],
-  dataSchema: null,
-  component: Tomatenmark,
-});
+export const app = new AppAssociation(
+  [".md"],
+  (instanceInfo) => new TomatenmarkApp(instanceInfo),
+);
 
-export default function Tomatenmark({
-  rawData,
-  setRawData,
-  PathBreadcrumbs,
-  SaveStatusIndicator,
-}: AppProps<null>) {
-  return (
-    <MilkdownProvider>
-      {/* status bar */}
-      <div className="mt-8 ml-[60px] flex gap-4 items-center">
-        {PathBreadcrumbs}
-        {SaveStatusIndicator}
-      </div>
+class TomatenmarkApp extends App {
+  constructor(instanceInfo: AppInstanceInfo) {
+    super(instanceInfo, "");
+  }
 
-      <MilkdownEditor initialMarkdown={rawData} onChange={setRawData} />
-    </MilkdownProvider>
-  );
+  override AppComponent = ({ data, setData, saveStatus }: AppProps) => {
+    return (
+      <MilkdownProvider>
+        {/* status bar */}
+        <div className="mt-8 ml-[60px] flex gap-4 items-center">
+          {<PathBreadcrumbs path={this.instanceInfo.path} />}
+          {this.SaveStatusIndicator(saveStatus)}
+        </div>
+
+        <MilkdownEditor initialMarkdown={data} onChange={setData} />
+      </MilkdownProvider>
+    );
+  };
 }
 
 function MilkdownEditor({

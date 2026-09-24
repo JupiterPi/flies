@@ -1,20 +1,32 @@
-import { ErrorPage } from "#/routes/_loggedIn/$";
-import { createIsomorphicFn } from "@tanstack/react-start";
-import { createApp, type AppProps } from "../apps";
 import ExcalidrawViewer from "./Excalidraw.client";
+import {
+  App,
+  AppAssociation,
+  type AppInstanceInfo,
+  type AppProps,
+} from "../apps";
+import { createClientOnlyFn } from "@tanstack/react-start";
 
-const component = createIsomorphicFn()
-  .client(() => {
-    return ExcalidrawViewer;
-  })
-  .server(() => {
-    return ({}: AppProps<null>) => {
-      return <ErrorPage>Cannot SSR Excalidraw</ErrorPage>;
-    };
-  });
+export const app = new AppAssociation(
+  [".excalidraw"],
+  (instanceInfo) => new ExcalidrawApp(instanceInfo),
+);
 
-export const App = createApp<null>({
-  associatedFileExtensions: [".excalidraw"],
-  dataSchema: null,
-  component: component(),
-});
+class ExcalidrawApp extends App {
+  constructor(instanceInfo: AppInstanceInfo) {
+    super(instanceInfo, "");
+  }
+
+  override AppComponent = createClientOnlyFn(
+    ({ data, setData, saveStatus }: AppProps) => {
+      return (
+        <ExcalidrawViewer
+          data={data}
+          setData={setData}
+          path={this.instanceInfo.path}
+          SaveStatusIndicator={this.SaveStatusIndicator(saveStatus)}
+        />
+      );
+    },
+  );
+}

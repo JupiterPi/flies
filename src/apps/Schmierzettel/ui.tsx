@@ -4,28 +4,141 @@ import {
   Dialog,
   DialogClose,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "#/components/ui/dialog";
 import { Textarea } from "#/components/ui/textarea";
 import {
+  IconBellCheck,
+  IconBellOff,
   IconBellPlus,
   IconBellRinging,
   IconEdit,
   IconPlus,
 } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
-import z from "zod";
 import { Masonry } from "masonic";
 import { Toggle } from "#/components/ui/toggle";
-import { useServer } from "#/client/orpc";
-import { useLocation } from "@tanstack/react-router";
-import { produce } from "immer";
-import { Note, useSchmierzettelData } from "./Schmierzettel";
+import { useSchmierzettelData } from "./app";
+import { Note } from "./data";
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemMedia,
+  ItemTitle,
+} from "#/components/ui/item";
+import { Field, FieldLabel } from "#/components/ui/field";
+import { Input } from "#/components/ui/input";
 
 export function SchmierzettelUI() {
-  return <SchmierzettelNotes />;
+  return (
+    <>
+      <div className="mt-2">
+        <NtfyshConfigurer />
+      </div>
+      <SchmierzettelNotes />
+    </>
+  );
+}
+
+function NtfyshConfigurer() {
+  const { data, dispatchOperation } = useSchmierzettelData();
+  const [ntfyshUrlInput, setNtfyshUrlInput] = useState(data.ntfyshUrl ?? "");
+  return (
+    <Item variant="outline" size="sm" className="max-w-md">
+      <ItemMedia>
+        {data.ntfyshUrl ? (
+          <IconBellCheck className="size-5" />
+        ) : (
+          <IconBellOff className="size-5" />
+        )}
+      </ItemMedia>
+      <ItemContent>
+        <ItemTitle>
+          {data.ntfyshUrl
+            ? `Sending notifications to ${new URL(data.ntfyshUrl).hostname}`
+            : "Not connected to a notification service"}
+        </ItemTitle>
+      </ItemContent>
+      <ItemActions>
+        <Dialog>
+          <DialogTrigger
+            render={
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setNtfyshUrlInput(data.ntfyshUrl ?? "")}
+              >
+                Configure
+              </Button>
+            }
+          />
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Configure ntfy.sh</DialogTitle>
+              <DialogDescription>
+                Schmierzettel can send notifications via{" "}
+                <a href="https://ntfy.sh" target="_blank">
+                  ntfy.sh
+                </a>
+                , which you can also self-host. Configure the instance and topic
+                for notifications below.
+              </DialogDescription>
+            </DialogHeader>
+            <Field>
+              <FieldLabel>ntfy.sh URL</FieldLabel>
+              <Input
+                type="url"
+                value={ntfyshUrlInput}
+                onChange={(e) => setNtfyshUrlInput(e.target.value)}
+                placeholder="https://ntfy.sh/your-topic"
+                className="input input-bordered w-full"
+              />
+            </Field>
+            <DialogFooter>
+              <DialogClose render={<Button variant="outline">Cancel</Button>} />
+              {data.ntfyshUrl !== null && (
+                <DialogClose
+                  render={
+                    <Button
+                      variant="destructive"
+                      onClick={() =>
+                        dispatchOperation("setNtfyshUrl", { ntfyshUrl: null })
+                      }
+                    >
+                      Disconnect
+                    </Button>
+                  }
+                />
+              )}
+              <DialogClose
+                render={
+                  <Button
+                    type="submit"
+                    disabled={
+                      ntfyshUrlInput === data.ntfyshUrl ||
+                      ntfyshUrlInput.trim() === ""
+                    }
+                    onClick={() => {
+                      dispatchOperation("setNtfyshUrl", {
+                        ntfyshUrl: ntfyshUrlInput.trim(),
+                      });
+                    }}
+                  >
+                    Save
+                  </Button>
+                }
+              />
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </ItemActions>
+    </Item>
+  );
 }
 
 function SchmierzettelNotes() {
@@ -101,9 +214,7 @@ function CaptureOrEditNoteDialog({
   onOpenChange: (open: boolean) => void;
   existingNote: Note | null;
 }) {
-  const { client } = useServer();
-  const location = useLocation();
-  const { data, setData } = useSchmierzettelData();
+  const { dispatchOperation } = useSchmierzettelData();
   const [noteTextInput, setNoteTextInput] = useState("");
   useEffect(() => {
     if (isOpen) {
@@ -165,10 +276,7 @@ function CaptureOrEditNoteDialog({
                 <Button
                   variant="destructive"
                   onClick={() => {
-                    setData({
-                      ...data,
-                      notes: [...data.notes.filter((n) => n !== existingNote)],
-                    });
+                    dispatchOperation("deleteNote", { id: existingNote.id });
                   }}
                 >
                   Delete
@@ -181,29 +289,26 @@ function CaptureOrEditNoteDialog({
               <Button
                 disabled={noteTextInput.trim() === ""}
                 onClick={async () => {
-                  const note = Note.parse({
-                    ...existingNote,
-                    content: noteTextInput,
-                    createdAt: existingNote?.createdAt ?? Date.now(),
-                    modifiedAt: Date.now(),
-                  } satisfies z.input<typeof Note>);
-                  for (const notification of notifications) {
-                    client.notifications.createNotification({
-                      message: noteTextInput,
-                      origin: `Schmierzettel note ${note.id} at ${location.pathname}`,
-                      url: window.location.href, // todo: highlight note by id
+                  const parsedNotifications = notifications.map(
+                    (notification) => ({
                       scheduledFor:
                         Date.now() + notificationIntervals[notification],
-                    });
-                  }
-                  setData(
-                    produce(data, (data) => {
-                      data.notes = data.notes.filter(
-                        (n) => n.id !== existingNote?.id,
-                      );
-                      data.notes.push(note);
                     }),
                   );
+                  if (existingNote) {
+                    dispatchOperation("updateNote", {
+                      id: existingNote.id,
+                      content: noteTextInput,
+                      timestamp: Date.now(),
+                      notifications: parsedNotifications,
+                    });
+                  } else {
+                    dispatchOperation("addNote", {
+                      content: noteTextInput,
+                      timestamp: Date.now(),
+                      notifications: parsedNotifications,
+                    });
+                  }
                 }}
               >
                 Save
