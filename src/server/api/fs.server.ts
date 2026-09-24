@@ -16,7 +16,7 @@ export const fsRoutes = os.meta(openapi({ prefix: "/fs" })).router({
     .input(z.object({ path: z.string() }))
     .handler(async ({ context, input }) => {
       assertPermission(context.privileges, permissions.read(input.path));
-      const path = joinPath(env.paths.fs, input.path);
+      const path = env.paths.fs + "/" + joinPath(input.path);
       if (await fs.exists(path)) {
         const stat = await fs.stat(path);
         return stat.isDirectory()
@@ -32,9 +32,12 @@ export const fsRoutes = os.meta(openapi({ prefix: "/fs" })).router({
     .input(z.object({ path: z.string() }))
     .handler(async ({ context, input }) => {
       assertPermission(context.privileges, permissions.read(input.path));
-      const entries = await fs.readdir(joinPath(env.paths.fs, input.path), {
-        withFileTypes: true,
-      });
+      const entries = await fs.readdir(
+        env.paths.fs + "/" + joinPath(input.path),
+        {
+          withFileTypes: true,
+        },
+      );
       return entries.map((entry) => ({
         type: entry.isDirectory() ? ("directory" as const) : ("file" as const),
         name: entry.name,
@@ -47,7 +50,7 @@ export const fsRoutes = os.meta(openapi({ prefix: "/fs" })).router({
     .input(z.object({ path: z.string() }))
     .handler(async ({ context, input }) => {
       assertPermission(context.privileges, permissions.write(input.path));
-      await Bun.file(joinPath(env.paths.fs, input.path)).write("");
+      await Bun.file(env.paths.fs + "/" + joinPath(input.path)).write("");
     }),
   uploadFile: os
     .route({ method: "POST", path: "/upload-file/{+path}" })
@@ -55,7 +58,7 @@ export const fsRoutes = os.meta(openapi({ prefix: "/fs" })).router({
     .input(z.object({ path: z.string(), file: z.file() }))
     .handler(async ({ context, input }) => {
       assertPermission(context.privileges, permissions.write(input.path));
-      await Bun.file(joinPath(env.paths.fs, input.path)).write(
+      await Bun.file(env.paths.fs + "/" + joinPath(input.path)).write(
         await input.file.bytes(),
       );
     }),
@@ -65,7 +68,7 @@ export const fsRoutes = os.meta(openapi({ prefix: "/fs" })).router({
     .input(z.object({ path: z.string() }))
     .handler(async ({ context, input }) => {
       assertPermission(context.privileges, permissions.write(input.path));
-      await fs.rm(joinPath(env.paths.fs, input.path), {
+      await fs.rm(env.paths.fs + "/" + joinPath(input.path), {
         recursive: true,
         force: true,
       });
@@ -76,7 +79,9 @@ export const fsRoutes = os.meta(openapi({ prefix: "/fs" })).router({
     .input(z.object({ path: z.string() }))
     .handler(async ({ context, input }) => {
       assertPermission(context.privileges, permissions.write(input.path));
-      await fs.mkdir(joinPath(env.paths.fs, input.path), { recursive: true });
+      await fs.mkdir(env.paths.fs + "/" + joinPath(input.path), {
+        recursive: true,
+      });
     }),
   downloadFile: os
     .$context<ResponseHeadersHandlerPluginContext>()
@@ -86,7 +91,7 @@ export const fsRoutes = os.meta(openapi({ prefix: "/fs" })).router({
     .output(z.instanceof(ReadableStream<Uint8Array<ArrayBuffer>>))
     .handler(async ({ context, input }) => {
       assertPermission(context.privileges, permissions.read(input.path));
-      const file = Bun.file(joinPath(env.paths.fs, input.path));
+      const file = Bun.file(env.paths.fs + "/" + joinPath(input.path));
       context.resHeaders?.set("Content-Type", file.type);
       return file.stream();
     }),
@@ -98,9 +103,8 @@ export const fsRoutes = os.meta(openapi({ prefix: "/fs" })).router({
       assertPermission(context.privileges, permissions.write(input.oldPath));
       assertPermission(context.privileges, permissions.write(input.newPath));
       await fs.rename(
-        joinPath(env.paths.fs, input.oldPath),
-        joinPath(env.paths.fs, input.newPath),
+        env.paths.fs + "/" + joinPath(input.oldPath),
+        env.paths.fs + "/" + joinPath(input.newPath),
       );
     }),
-  // todo some things here were written rather quickly
 });
