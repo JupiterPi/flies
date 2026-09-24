@@ -4,9 +4,9 @@ import { Store } from "#/server/stores/stores.server";
 import { env } from "#/env";
 import { os } from "@orpc/server";
 import { openapi } from "@orpc/openapi";
-import { auth } from "#/server/api/users.server";
-import { hasReadPermission } from "#/server/permissions";
 import { instantiateApp } from "./appsRegistry";
+import { assertPermission, auth } from "#/server/auth.server";
+import { permissions } from "#/server/permissions";
 
 const runningApps = new Map<string, App>();
 
@@ -46,14 +46,10 @@ export async function runAndRegisterApp(filePath: string) {
 export const appsRoutes = os.meta(openapi({ prefix: "/apps" })).router({
   discoverAppFile: os
     .route({ method: "POST", path: "/discover" })
-    .use(auth)
+    .use(auth())
     .input(z.object({ filePath: z.string() }))
     .handler(async ({ context, input }) => {
-      if (!hasReadPermission(context.permissions, input.filePath)) {
-        throw new Error(
-          `You do not have permission to read this path: ${input.filePath}`,
-        );
-      }
+      assertPermission(context.privileges, permissions.read(input.filePath));
       await runAndRegisterApp(input.filePath);
     }),
 });

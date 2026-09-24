@@ -1,35 +1,57 @@
-export type UserPermissions = {
-  admin: boolean;
-  readPaths: "*" | string[];
-  writePaths: "*" | string[];
+import type { Share, User } from "./stores/authStore.server";
+import * as AuthStore from "./stores/authStore.server";
+
+export class Privileges {
+  static unauthenticated() {
+    return new Privileges(false, [], []);
+  }
+
+  static forUser(user: User) {
+    return new Privileges(user.admin, "*", "*");
+  }
+
+  static forShare(share: Share) {
+    return new Privileges(
+      false,
+      [share.path],
+      share.allowWrite ? [share.path] : [],
+    );
+  }
+
+  constructor(
+    public readonly admin: boolean,
+    public readonly readPaths: "*" | string[],
+    public readonly writePaths: "*" | string[],
+  ) {}
+}
+
+export const permissions = {
+  admin: {
+    description: "admin",
+    check: (privileges: Privileges) => privileges.admin,
+  },
+  read: (path: string) => ({
+    description: `read path ${path}`,
+    check: (privileges: Privileges) =>
+      privileges.readPaths === "*" ||
+      privileges.readPaths.some((p) => path.startsWith(p)) ||
+      AuthStore.getShares().publicShares.some((s) => path.startsWith(s.path)),
+  }),
+  write: (path: string) => ({
+    description: `write to path ${path}`,
+    check: (privileges: Privileges) =>
+      privileges.writePaths === "*" ||
+      privileges.writePaths.some((p) => path.startsWith(p)) ||
+      AuthStore.getShares().publicShares.some(
+        (s) => path.startsWith(s.path) && s.allowWrite,
+      ),
+  }),
+  createShares: {
+    description: "create shares",
+    check: (privileges: Privileges) => privileges.admin,
+  },
+} satisfies Record<string, Permission | ((...args: any[]) => Permission)>;
+export type Permission = {
+  description: string;
+  check: (privileges: Privileges) => boolean;
 };
-
-export const defaultPermissions: UserPermissions = {
-  admin: false,
-  readPaths: [],
-  writePaths: [],
-};
-
-export function hasAdminPermission(permissions: UserPermissions): boolean {
-  return permissions.admin;
-}
-
-export function hasReadPermission(
-  permissions: UserPermissions,
-  path: string,
-): boolean {
-  if (permissions.admin) return true;
-  if (permissions.readPaths === "*") return true;
-  return permissions.readPaths.some((p) => path.startsWith(p));
-}
-
-export function hasWritePermission(
-  permissions: UserPermissions,
-  path: string,
-): boolean {
-  if (permissions.admin) return true;
-  if (permissions.writePaths === "*") return true;
-  return permissions.writePaths.some((p) => path.startsWith(p));
-}
-
-// todo: more work here to recognize public shares

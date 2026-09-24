@@ -1,10 +1,10 @@
 import handler, { createServerEntry } from "@tanstack/react-start/server-entry";
 import * as fs from "node:fs";
-import { hasReadPermission } from "./server/permissions";
 import { authFromRequest } from "./server/auth.server";
 import { runSavedApps } from "./apps/runningAppsManager";
 import { instantiateApp } from "./apps/appsRegistry";
 import { env } from "./env";
+import { permissions } from "./server/permissions";
 
 runSavedApps();
 
@@ -41,7 +41,7 @@ async function routeRawFileRequest(request: Request) {
         if ("error" in auth) {
           return new Response(auth.error, { status: 401 });
         }
-        if (!hasReadPermission(auth.permissions, filePath)) {
+        if (!permissions.read(filePath).check(auth.privileges)) {
           return new Response("You do not have permission to read this path", {
             status: 403,
           });

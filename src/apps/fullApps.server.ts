@@ -1,5 +1,3 @@
-import { auth } from "#/server/api/users.server";
-import { hasReadPermission, hasWritePermission } from "#/server/permissions";
 import { openapi } from "@orpc/openapi";
 import { asyncIteratorObject, ORPCError, os } from "@orpc/server";
 import z from "zod";
@@ -13,6 +11,8 @@ import { Store } from "#/server/stores/stores.server";
 
 import type { FullApp } from "./fullApps";
 import { env } from "#/env";
+import { assertPermission, auth } from "#/server/auth.server";
+import { permissions } from "#/server/permissions";
 export class OperationsBasedFile<
   schema extends z.ZodObject,
   operations extends Record<string, Operation<any, any>>,
@@ -75,16 +75,12 @@ export const operationsBasedFiles = new Map<
 
 export const fullAppRoutes = os.meta(openapi({ prefix: "/full-apps" })).router({
   getLiveData: os
-    .use(auth)
+    .use(auth())
     .route({ method: "GET", path: "/live-data" })
     .input(z.object({ path: z.string() }))
     .output(asyncIteratorObject(z.any()))
     .handler(async function* ({ context, input, signal }) {
-      if (!hasReadPermission(context.permissions, input.path)) {
-        throw new ORPCError("FORBIDDEN", {
-          message: "You do not have permission to read this file.",
-        });
-      }
+      assertPermission(context.privileges, permissions.read(input.path));
       const file = operationsBasedFiles.get(input.path);
       if (!file) {
         throw new ORPCError("NOT_FOUND", {
@@ -108,7 +104,7 @@ export const fullAppRoutes = os.meta(openapi({ prefix: "/full-apps" })).router({
       }
     }),
   dispatchOperation: os
-    .use(auth)
+    .use(auth())
     .route({ method: "POST", path: "/dispatch-operation" })
     .input(
       z.object({
@@ -117,18 +113,7 @@ export const fullAppRoutes = os.meta(openapi({ prefix: "/full-apps" })).router({
       }),
     )
     .handler(async ({ context, input }) => {
-      if (!context.user) {
-        throw new ORPCError("UNAUTHORIZED", {
-          message: "User must be logged in to dispatch operations.",
-        });
-      }
-      if (!hasWritePermission(context.permissions, input.path)) {
-        throw new ORPCError("FORBIDDEN", {
-          message:
-            "User does not have write permission to dispatch operations.",
-        });
-      }
-
+      assertPermission(context.privileges, permissions.write(input.path));
       const file = operationsBasedFiles.get(input.path);
       if (!file) {
         throw new ORPCError("NOT_FOUND", {

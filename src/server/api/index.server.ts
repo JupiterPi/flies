@@ -1,9 +1,9 @@
 import { os } from "@orpc/server";
 import { fsRoutes } from "./fs.server";
-import { userRoutes } from "./users.server";
 import { sharesRoutes } from "./shares.server";
 import { fullAppRoutes } from "#/apps/fullApps.server";
 import { appsRoutes } from "#/apps/runningAppsManager";
+import { userRoutes } from "../auth.server";
 
 export const router = {
   hello: os.route({ method: "GET", path: "/hello" }).handler(async () => {

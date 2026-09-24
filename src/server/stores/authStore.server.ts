@@ -16,8 +16,9 @@ export type User = z.infer<typeof User>;
 export const Share = z.object({
   id: z.string().default(() => crypto.randomUUID()),
   name: z.string(),
-  path: z.string(),
   ownerId: z.string(),
+  path: z.string(),
+  allowWrite: z.boolean().default(false),
 });
 export type Share = z.infer<typeof Share>;
 
@@ -67,7 +68,7 @@ export function createShare(share: Omit<z.input<typeof Share>, "id">) {
   return newShare;
 }
 
-export async function getShares() {
+export function getShares() {
   return {
     shares: authStore.read().shares,
     publicShares: authStore.read().publicShares,

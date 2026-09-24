@@ -1,20 +1,20 @@
 import type { User } from "./stores/authStore.server";
 import * as AuthStore from "./stores/authStore.server";
-import { defaultPermissions, type UserPermissions } from "./permissions";
-
-function getUserPermissions(user: User): UserPermissions {
-  return {
-    admin: user.admin,
-    readPaths: "*",
-    writePaths: "*",
-  };
-}
+import { Privileges, type Permission } from "./permissions";
+import "@orpc/openapi/extensions/route";
+import type {
+  RequestHeadersHandlerPluginContext,
+  ResponseHeadersHandlerPluginContext,
+} from "@orpc/server/plugins";
+import { ORPCError, os } from "@orpc/server";
+import { openapi } from "@orpc/openapi";
+import { setCookie } from "@orpc/server/helpers";
 
 // sessions
 
 const sessions = new Map<
   string,
-  { sessionStart: Date; user: User; permissions: UserPermissions }
+  { sessionStart: Date; user: User; privileges: Privileges }
 >();
 
 export const sessionTimeoutMs = 1000 * 60 * 60 * 24; // 24 hours
@@ -34,7 +34,7 @@ export function createSession(user: User) {
   sessions.set(sessionId, {
     sessionStart: new Date(),
     user,
-    permissions: getUserPermissions(user),
+    privileges: Privileges.forUser(user),
   });
   return sessionId;
 }
@@ -45,9 +45,9 @@ export async function authFromRequest(
   authHeader: string | null,
   cookieHeader: string | null,
   shareQueryParam: string | null,
-): Promise<{ user?: User; permissions: UserPermissions } | { error: string }> {
+): Promise<{ user?: User; privileges: Privileges } | { error: string }> {
   type AuthenticationMethod = () => Promise<
-    { user?: User; permissions: UserPermissions } | null | { error: string }
+    { user?: User; privileges: Privileges } | null | { error: string }
   >;
 
   // try to authenticate from various sources
@@ -63,7 +63,7 @@ export async function authFromRequest(
       if (!user) return { error: "Invalid username or password" };
       return {
         user,
-        permissions: getUserPermissions(user),
+        privileges: Privileges.forUser(user),
       };
     }
     if (authHeader.startsWith("Bearer ")) {
@@ -93,7 +93,7 @@ export async function authFromRequest(
     if (!share) return { error: "Invalid share ID" };
     return {
       user: undefined,
-      permissions: { admin: false, readPaths: [share.path], writePaths: [] },
+      privileges: Privileges.forShare(share),
     };
   };
   const auth =
@@ -105,13 +105,83 @@ export async function authFromRequest(
     return { error: auth.error };
   }
 
-  // always allow reading from public shares
-  const permissions = auth ? auth.permissions : defaultPermissions;
-  const publicShares = (await AuthStore.getShares()).publicShares;
-  permissions.readPaths =
-    permissions.readPaths === "*"
-      ? "*"
-      : [...permissions.readPaths, ...publicShares.map((s) => s.path)];
-
-  return { user: auth?.user, permissions };
+  return {
+    user: auth?.user,
+    privileges: auth?.privileges || Privileges.unauthenticated(),
+  };
 }
+
+// middlewares
+
+interface ServerContext
+  extends
+    ResponseHeadersHandlerPluginContext,
+    RequestHeadersHandlerPluginContext {}
+
+export const auth = (...requiredPermissions: Permission[]) =>
+  os.$context<ServerContext>().middleware(async ({ context, next }) => {
+    const auth = await authFromRequest(
+      context.reqHeaders?.get("Authorization") ?? null,
+      context.reqHeaders?.get("Cookie") ?? null,
+      null,
+    );
+    if ("error" in auth) {
+      throw new ORPCError("UNAUTHORIZED", { message: auth.error });
+    }
+
+    for (const requiredPermission of Array.isArray(requiredPermissions)
+      ? requiredPermissions
+      : [requiredPermissions]) {
+      assertPermission(auth.privileges, requiredPermission);
+    }
+
+    return next({ context: { ...auth } });
+  });
+
+export const requireUser = os
+  .$context<{ user?: User }>()
+  .middleware(async ({ context, next }) => {
+    if (!context.user) {
+      throw new ORPCError("FORBIDDEN", {
+        message: "You must be a user to access this route.",
+      });
+    }
+    return next({ context: { user: context.user } });
+  });
+
+export function assertPermission(
+  privileges: Privileges,
+  permission: Permission,
+) {
+  if (!permission.check(privileges)) {
+    throw new ORPCError("FORBIDDEN", {
+      message: `You are missing the required permission: ${permission.description}`,
+    });
+  }
+}
+
+// routes
+
+export const userRoutes = os.meta(openapi({ prefix: "/user" })).router({
+  createSession: os
+    .route({ method: "POST", path: "/create-session" })
+    .$context<ServerContext>()
+    .use(auth())
+    .use(requireUser)
+    .handler(({ context }) => {
+      const sessionId = createSession(context.user);
+      setCookie(context.resHeaders, "sessionId", sessionId, {
+        maxAge: sessionTimeoutMs / 1000,
+        httpOnly: true,
+        secure: true,
+        sameSite: "strict",
+      });
+      return sessionId;
+    }),
+  getAccessibleTopLevelDirectories: os
+    .route({ method: "GET", path: "/accessible-top-level-directories" })
+    .use(auth())
+    .handler(async () => {
+      return ["f"]; // todo: fake
+    }),
+});
