@@ -1,7 +1,7 @@
 import { createEnv } from "@t3-oss/env-core";
 import { z } from "zod";
 
-export const env = createEnv({
+const _env = createEnv({
   server: {
     SERVER_URL: z.string().default("http://localhost:3000"),
     DATA_DIR: z.string().default("./flies-data"),
@@ -38,3 +38,11 @@ export const env = createEnv({
    */
   emptyStringAsUndefined: true,
 });
+
+export const env = {
+  serverUrl: _env.SERVER_URL,
+  paths: {
+    data: _env.DATA_DIR,
+    fs: `${_env.DATA_DIR}/fs`,
+  },
+};
