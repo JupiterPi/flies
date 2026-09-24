@@ -7,6 +7,7 @@ import { openapi } from "@orpc/openapi";
 import { instantiateApp } from "./appsRegistry";
 import { assertPermission, auth } from "#/server/auth.server";
 import { permissions } from "#/server/permissions";
+import { joinPath } from "#/utils";
 
 const runningApps = new Map<string, App>();
 
@@ -26,9 +27,7 @@ export async function runSavedApps() {
   const appFilePaths = appFileStore.read().appFilePaths;
   console.log("Running saved apps:", appFilePaths);
   for (const filePath of appFilePaths) {
-    const file = Bun.file(
-      env.paths.fs + (filePath.startsWith("/") ? filePath : "/" + filePath),
-    );
+    const file = Bun.file(joinPath(env.paths.fs, filePath));
     if (!(await file.exists())) return null;
     await runAndRegisterApp(filePath);
   }

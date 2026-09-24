@@ -53,6 +53,7 @@ import { Input } from "#/components/ui/input";
 import { useEffect, useState } from "react";
 import { useServer } from "#/client/orpc";
 import { instantiateApp } from "#/apps/appsRegistry";
+import { joinPath, pathFilename, pathParent } from "#/utils";
 
 export default function DirectoryViewer({ path }: { path: string }) {
   const { fs } = useServer();
@@ -77,7 +78,7 @@ export default function DirectoryViewer({ path }: { path: string }) {
           {
             type: "directory" as const,
             name: "..",
-            path: "/" + path.split("/").slice(0, -1).join("/"),
+            path: "/" + pathParent(path),
             hasActions: false,
           },
         ]
@@ -265,14 +266,13 @@ function DeleteItemDialog({
   onRefresh: () => void;
 }) {
   const { fs } = useServer();
-  const basename = path.split("/").slice(-1)[0];
   return (
     <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Are you sure?</AlertDialogTitle>
           <AlertDialogDescription>
-            This will permanently delete <b>{basename}</b>
+            This will permanently delete <b>{pathFilename(path)}</b>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -351,7 +351,7 @@ function CreateFileOrDirectoryItem({
             <DialogClose render={<Button variant="outline">Cancel</Button>} />
             <Button
               onClick={async () => {
-                const newItemPath = parent + "/" + newName;
+                const newItemPath = joinPath(parent, newName);
                 await (type === "file"
                   ? fs.createFile(newItemPath)
                   : fs.createDirectory(newItemPath));
@@ -412,10 +412,7 @@ function RenameItemDialog({
           <DialogClose render={<Button variant="outline">Cancel</Button>} />
           <Button
             onClick={async () => {
-              const newItemPath = [
-                ...path.split("/").slice(0, -1),
-                newName,
-              ].join("/");
+              const newItemPath = joinPath(pathParent(path), newName);
               await fs.moveFileOrDirectory(path, newItemPath);
               onRefresh();
             }}

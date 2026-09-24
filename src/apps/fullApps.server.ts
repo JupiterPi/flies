@@ -13,6 +13,7 @@ import type { FullApp } from "./fullApps";
 import { env } from "#/env";
 import { assertPermission, auth } from "#/server/auth.server";
 import { permissions } from "#/server/permissions";
+import { joinPath } from "#/utils";
 export class OperationsBasedFile<
   schema extends z.ZodObject,
   operations extends Record<string, Operation<any, any>>,
@@ -28,7 +29,7 @@ export class OperationsBasedFile<
     operations extends Record<string, Operation<any, any>>,
   >(path: string, app: FullApp<schema, operations>) {
     const fileStore = await Store.fromFile(
-      Bun.file(env.paths.fs + (path.startsWith("/") ? path : "/" + path)), // todo: check if Claude would have found this issue
+      Bun.file(joinPath(env.paths.fs, path)), // todo: check if Claude would have found this issue (which was there originally, at git commit 2ca85ee)
       app.dataSchema,
       app.newFileDataJson,
     );

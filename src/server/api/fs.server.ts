@@ -7,6 +7,7 @@ import type { ResponseHeadersHandlerPluginContext } from "@orpc/server/plugins";
 import { env } from "#/env";
 import { assertPermission, auth } from "../auth.server";
 import { permissions } from "../permissions";
+import { joinPath } from "#/utils";
 
 export const fsRoutes = os.meta(openapi({ prefix: "/fs" })).router({
   getInfo: os
@@ -15,7 +16,7 @@ export const fsRoutes = os.meta(openapi({ prefix: "/fs" })).router({
     .input(z.object({ path: z.string() }))
     .handler(async ({ context, input }) => {
       assertPermission(context.privileges, permissions.read(input.path));
-      const path = env.paths.fs + "/" + input.path;
+      const path = joinPath(env.paths.fs, input.path);
       if (await fs.exists(path)) {
         const stat = await fs.stat(path);
         return stat.isDirectory()
@@ -31,8 +32,9 @@ export const fsRoutes = os.meta(openapi({ prefix: "/fs" })).router({
     .input(z.object({ path: z.string() }))
     .handler(async ({ context, input }) => {
       assertPermission(context.privileges, permissions.read(input.path));
-      const path = env.paths.fs + "/" + input.path;
-      const entries = await fs.readdir(path, { withFileTypes: true });
+      const entries = await fs.readdir(joinPath(env.paths.fs, input.path), {
+        withFileTypes: true,
+      });
       return entries.map((entry) => ({
         type: entry.isDirectory() ? ("directory" as const) : ("file" as const),
         name: entry.name,
@@ -45,8 +47,7 @@ export const fsRoutes = os.meta(openapi({ prefix: "/fs" })).router({
     .input(z.object({ path: z.string() }))
     .handler(async ({ context, input }) => {
       assertPermission(context.privileges, permissions.write(input.path));
-      const path = env.paths.fs + "/" + input.path;
-      await Bun.file(path).write("");
+      await Bun.file(joinPath(env.paths.fs, input.path)).write("");
     }),
   uploadFile: os
     .route({ method: "POST", path: "/upload-file/{+path}" })
@@ -54,8 +55,9 @@ export const fsRoutes = os.meta(openapi({ prefix: "/fs" })).router({
     .input(z.object({ path: z.string(), file: z.file() }))
     .handler(async ({ context, input }) => {
       assertPermission(context.privileges, permissions.write(input.path));
-      const path = env.paths.fs + "/" + input.path;
-      await Bun.file(path).write(await input.file.bytes());
+      await Bun.file(joinPath(env.paths.fs, input.path)).write(
+        await input.file.bytes(),
+      );
     }),
   delete: os
     .route({ method: "DELETE", path: "/delete/{+path}" })
@@ -63,8 +65,10 @@ export const fsRoutes = os.meta(openapi({ prefix: "/fs" })).router({
     .input(z.object({ path: z.string() }))
     .handler(async ({ context, input }) => {
       assertPermission(context.privileges, permissions.write(input.path));
-      const path = env.paths.fs + "/" + input.path;
-      await fs.rm(path, { recursive: true, force: true });
+      await fs.rm(joinPath(env.paths.fs, input.path), {
+        recursive: true,
+        force: true,
+      });
     }),
   createDirectory: os
     .route({ method: "POST", path: "/create-directory/{+path}" })
@@ -72,8 +76,7 @@ export const fsRoutes = os.meta(openapi({ prefix: "/fs" })).router({
     .input(z.object({ path: z.string() }))
     .handler(async ({ context, input }) => {
       assertPermission(context.privileges, permissions.write(input.path));
-      const path = env.paths.fs + "/" + input.path;
-      await fs.mkdir(path, { recursive: true });
+      await fs.mkdir(joinPath(env.paths.fs, input.path), { recursive: true });
     }),
   downloadFile: os
     .$context<ResponseHeadersHandlerPluginContext>()
@@ -83,9 +86,9 @@ export const fsRoutes = os.meta(openapi({ prefix: "/fs" })).router({
     .output(z.instanceof(ReadableStream<Uint8Array<ArrayBuffer>>))
     .handler(async ({ context, input }) => {
       assertPermission(context.privileges, permissions.read(input.path));
-      const path = env.paths.fs + "/" + input.path;
-      context.resHeaders?.set("Content-Type", Bun.file(path).type);
-      return Bun.file(path).stream();
+      const file = Bun.file(joinPath(env.paths.fs, input.path));
+      context.resHeaders?.set("Content-Type", file.type);
+      return file.stream();
     }),
   move: os
     .route({ method: "POST", path: "/move/{+oldPath}" })
@@ -94,9 +97,10 @@ export const fsRoutes = os.meta(openapi({ prefix: "/fs" })).router({
     .handler(async ({ context, input }) => {
       assertPermission(context.privileges, permissions.write(input.oldPath));
       assertPermission(context.privileges, permissions.write(input.newPath));
-      const oldPath = env.paths.fs + "/" + input.oldPath;
-      const newPath = env.paths.fs + "/" + input.newPath;
-      await fs.rename(oldPath, newPath);
+      await fs.rename(
+        joinPath(env.paths.fs, input.oldPath),
+        joinPath(env.paths.fs, input.newPath),
+      );
     }),
   // todo some things here were written rather quickly
 });

@@ -4,6 +4,7 @@ import "@excalidraw/excalidraw/index.css";
 import { resolveTheme, useTheme } from "#/components/theme-provider";
 import { Link } from "@tanstack/react-router";
 import type { AppProps } from "../apps";
+import { pathParent } from "#/utils";
 
 export default function ExcalidrawViewer({
   data,
@@ -27,7 +28,7 @@ export default function ExcalidrawViewer({
               <Link
                 to="/$"
                 params={{
-                  _splat: path.split("/").slice(0, -1).join("/"),
+                  _splat: pathParent(path),
                 }}
                 className="no-underline text-inherit! opacity-50 hover:opacity-100 transition-opacity transition-duration-300"
               >

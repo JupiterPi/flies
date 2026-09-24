@@ -5,6 +5,7 @@ import { runSavedApps } from "./apps/runningAppsManager";
 import { instantiateApp } from "./apps/appsRegistry";
 import { env } from "./env";
 import { permissions } from "./server/permissions";
+import { pathFilename } from "./utils";
 
 runSavedApps();
 
@@ -50,11 +51,10 @@ async function routeRawFileRequest(request: Request) {
         // return the app with a login prompt, and then it would retry the request with the session cookie
         const fsFile = Bun.file(`${env.paths.fs}${filePath}`);
         if (await fsFile.exists()) {
-          const fileName = filePath.split("/").pop() || "file";
           return new Response(fsFile.stream(), {
             headers: {
               "Content-Type": fsFile.type || "application/octet-stream",
-              "Content-Disposition": `inline; filename="${fileName}"`,
+              "Content-Disposition": `inline; filename="${pathFilename(filePath)}"`,
             },
           });
         }
