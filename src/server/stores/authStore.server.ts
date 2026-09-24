@@ -33,7 +33,7 @@ export const AuthStoreSchema = z.object({
 // api
 
 const authStore = await Store.fromFile(
-  Bun.file(`${env.DATA_DIR}/auth.json`),
+  Bun.file(`${env.paths.data}/auth.json`),
   AuthStoreSchema,
   {},
 );

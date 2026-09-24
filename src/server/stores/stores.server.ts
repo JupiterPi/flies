@@ -22,7 +22,7 @@ export class Store<T extends z.ZodObject> {
   }
 
   private async init() {
-    if (!(await this.file.exists())) {
+    if (!(await this.file.exists()) || this.file.size === 0) {
       this.data = this.schema.parse(this.initialData);
       await this.file.write(JSON.stringify(this.data, null, 2));
     } else {

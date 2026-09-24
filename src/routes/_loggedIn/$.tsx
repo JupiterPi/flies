@@ -12,7 +12,7 @@ import {
 import { FliesHomeLogo } from ".";
 import React from "react";
 import { useServer } from "#/client/orpc";
-import { apps, AppWrapper } from "#/apps/apps";
+import { instantiateApp } from "#/apps/appsRegistry";
 
 export const Route = createFileRoute("/_loggedIn/$")({
   ssr: false,
@@ -20,7 +20,7 @@ export const Route = createFileRoute("/_loggedIn/$")({
 });
 
 function RouteComponent() {
-  const { fs } = useServer();
+  const { client, fs } = useServer();
   const path = Route.useParams()._splat!;
 
   const remoteItem = useQuery({
@@ -48,10 +48,10 @@ function RouteComponent() {
     const downloadLink = remoteItem.data.downloadLink;
 
     // resolve associated app
-    for (const [_, app] of Object.entries(apps)) {
-      if (app.associatedFileExtensions.some((ext) => path.endsWith(ext))) {
-        return <AppWrapper app={app} path={path} />;
-      }
+    const app = instantiateApp({ path });
+    if (app) {
+      client.apps.discoverAppFile({ filePath: path }); // ignore result
+      return <app.WrapperComponent />;
     }
 
     // if no app is found, open the raw file

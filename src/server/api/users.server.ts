@@ -1,4 +1,5 @@
 import { ORPCError, os } from "@orpc/server";
+import "@orpc/openapi/extensions/route";
 import { openapi } from "@orpc/openapi";
 import type { ResponseHeadersHandlerPluginContext } from "@orpc/server/plugins";
 import type { RequestHeadersHandlerPluginContext } from "@orpc/server/plugins";

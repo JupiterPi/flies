@@ -8,7 +8,7 @@ import { useServer } from "#/client/orpc";
 
 export const Route = createFileRoute("/_loggedIn/")({ component: Home });
 
-export function Home() {
+function Home() {
   const { queries } = useServer();
   const {
     data: topLevelDirectories,

@@ -33,7 +33,7 @@ const handler = new OpenAPIHandler(router, {
               title: "Flies",
               version: "0.0.0",
             },
-            servers: [{ url: `${env.SERVER_URL}/api` }],
+            servers: [{ url: `${env.serverUrl}/api` }],
           },
         }),
     }),

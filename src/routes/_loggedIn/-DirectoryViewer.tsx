@@ -51,8 +51,8 @@ import { Field, FieldGroup } from "#/components/ui/field";
 import { Label } from "#/components/ui/label";
 import { Input } from "#/components/ui/input";
 import { useEffect, useState } from "react";
-import { resolveFileViewer } from "#/data/fileTypeAssociations";
 import { useServer } from "#/client/orpc";
+import { instantiateApp } from "#/apps/appsRegistry";
 
 export default function DirectoryViewer({ path }: { path: string }) {
   const { fs } = useServer();
@@ -211,7 +211,7 @@ export function FileOrDirectoryItem({
   );
 
   const needsActualNavigation =
-    type === "file" && resolveFileViewer(path) === undefined;
+    type === "file" && instantiateApp({ path }) !== null;
   return (
     <>
       <Item

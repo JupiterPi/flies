@@ -1,5 +1,5 @@
 import { ORPCError, os } from "@orpc/server";
-import * as z from "zod";
+import z from "zod";
 import "@orpc/openapi/extensions/route";
 import { openapi } from "@orpc/openapi";
 import * as fs from "node:fs/promises";
@@ -11,8 +11,6 @@ import {
   hasReadPermission,
   hasWritePermission,
 } from "../permissions";
-
-export const fsRootDir = `${env.DATA_DIR}/fs`;
 
 function assertPermissions(
   permissions: UserPermissions,
@@ -41,7 +39,7 @@ export const fsRoutes = os.meta(openapi({ prefix: "/fs" })).router({
     .input(z.object({ path: z.string() }))
     .handler(async ({ context, input }) => {
       assertPermissions(context.permissions, "read", input.path);
-      const path = fsRootDir + "/" + input.path;
+      const path = env.paths.fs + "/" + input.path;
       if (await fs.exists(path)) {
         const stat = await fs.stat(path);
         return stat.isDirectory()
@@ -57,7 +55,7 @@ export const fsRoutes = os.meta(openapi({ prefix: "/fs" })).router({
     .input(z.object({ path: z.string() }))
     .handler(async ({ context, input }) => {
       assertPermissions(context.permissions, "read", input.path);
-      const path = fsRootDir + "/" + input.path;
+      const path = env.paths.fs + "/" + input.path;
       const entries = await fs.readdir(path, { withFileTypes: true });
       return entries.map((entry) => ({
         type: entry.isDirectory() ? ("directory" as const) : ("file" as const),
@@ -71,7 +69,7 @@ export const fsRoutes = os.meta(openapi({ prefix: "/fs" })).router({
     .input(z.object({ path: z.string() }))
     .handler(async ({ context, input }) => {
       assertPermissions(context.permissions, "write", input.path);
-      const path = fsRootDir + "/" + input.path;
+      const path = env.paths.fs + "/" + input.path;
       await Bun.file(path).write("");
     }),
   uploadFile: os
@@ -80,7 +78,7 @@ export const fsRoutes = os.meta(openapi({ prefix: "/fs" })).router({
     .input(z.object({ path: z.string(), file: z.file() }))
     .handler(async ({ context, input }) => {
       assertPermissions(context.permissions, "write", input.path);
-      const path = fsRootDir + "/" + input.path;
+      const path = env.paths.fs + "/" + input.path;
       await Bun.file(path).write(await input.file.bytes());
     }),
   delete: os
@@ -89,7 +87,7 @@ export const fsRoutes = os.meta(openapi({ prefix: "/fs" })).router({
     .input(z.object({ path: z.string() }))
     .handler(async ({ context, input }) => {
       assertPermissions(context.permissions, "write", input.path);
-      const path = fsRootDir + "/" + input.path;
+      const path = env.paths.fs + "/" + input.path;
       await fs.rm(path, { recursive: true, force: true });
     }),
   createDirectory: os
@@ -98,7 +96,7 @@ export const fsRoutes = os.meta(openapi({ prefix: "/fs" })).router({
     .input(z.object({ path: z.string() }))
     .handler(async ({ context, input }) => {
       assertPermissions(context.permissions, "write", input.path);
-      const path = fsRootDir + "/" + input.path;
+      const path = env.paths.fs + "/" + input.path;
       await fs.mkdir(path, { recursive: true });
     }),
   downloadFile: os
@@ -109,7 +107,7 @@ export const fsRoutes = os.meta(openapi({ prefix: "/fs" })).router({
     .output(z.instanceof(ReadableStream<Uint8Array<ArrayBuffer>>))
     .handler(async ({ context, input }) => {
       assertPermissions(context.permissions, "read", input.path);
-      const path = fsRootDir + "/" + input.path;
+      const path = env.paths.fs + "/" + input.path;
       context.resHeaders?.set("Content-Type", Bun.file(path).type);
       return Bun.file(path).stream();
     }),
@@ -120,8 +118,8 @@ export const fsRoutes = os.meta(openapi({ prefix: "/fs" })).router({
     .handler(async ({ context, input }) => {
       assertPermissions(context.permissions, "write", input.oldPath);
       assertPermissions(context.permissions, "write", input.newPath);
-      const oldPath = fsRootDir + "/" + input.oldPath;
-      const newPath = fsRootDir + "/" + input.newPath;
+      const oldPath = env.paths.fs + "/" + input.oldPath;
+      const newPath = env.paths.fs + "/" + input.newPath;
       await fs.rename(oldPath, newPath);
     }),
   // todo some things here were written rather quickly
