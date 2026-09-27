@@ -112,3 +112,8 @@ export function formatFutureTimestampRelative(timestamp: number): string {
     sameElse: "DD.MM.YYYY HH:mm",
   });
 }
+
+export function formatTimestampRelative(timestamp: number): string {
+  dayjs.extend(calendar);
+  return dayjs(timestamp).calendar(null);
+}
