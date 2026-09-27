@@ -118,7 +118,9 @@ function NoteCard({ note, onOpen }: { note: Note; onOpen: () => void }) {
             <span className="text-muted-foreground italic">Empty Note</span>
           )}
         </div>
-        <NotificationBadges notifications={note.notifications} />
+        {note.notifications.length > 0 && (
+          <NotificationBadges notifications={note.notifications} />
+        )}
       </CardContent>
     </Card>
   );
