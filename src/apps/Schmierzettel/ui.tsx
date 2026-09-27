@@ -4,38 +4,19 @@ import {
   Dialog,
   DialogClose,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "#/components/ui/dialog";
 import { Textarea } from "#/components/ui/textarea";
-import {
-  IconBell,
-  IconBellCheck,
-  IconBellOff,
-  IconEdit,
-  IconPlus,
-} from "@tabler/icons-react";
+import { IconEdit, IconPlus } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 import { Masonry } from "masonic";
 import { useSchmierzettelData } from "./app";
 import { Note, Notification } from "./data";
-import {
-  Item,
-  ItemActions,
-  ItemContent,
-  ItemMedia,
-  ItemTitle,
-} from "#/components/ui/item";
-import { Field, FieldLabel } from "#/components/ui/field";
-import { Input } from "#/components/ui/input";
-import { InlineEditInput } from "#/components/inline-edit-input";
-import {
-  formatFutureTimestampRelative,
-  parseNaturalLanguageDate,
-} from "#/utils";
+import { useSearch } from "@tanstack/react-router";
+import z from "zod";
+import { EditableNotificationsList, NtfyshConfigurer } from "./notifications";
 
 export function SchmierzettelUI() {
   return (
@@ -45,102 +26,6 @@ export function SchmierzettelUI() {
       </div>
       <SchmierzettelNotes />
     </>
-  );
-}
-
-function NtfyshConfigurer() {
-  const { data, dispatchOperation } = useSchmierzettelData();
-  const [ntfyshUrlInput, setNtfyshUrlInput] = useState(data.ntfyshUrl ?? "");
-  return (
-    <Item variant="outline" size="sm" className="max-w-md">
-      <ItemMedia>
-        {data.ntfyshUrl ? (
-          <IconBellCheck className="size-5" />
-        ) : (
-          <IconBellOff className="size-5" />
-        )}
-      </ItemMedia>
-      <ItemContent>
-        <ItemTitle>
-          {data.ntfyshUrl
-            ? `Sending notifications to ${new URL(data.ntfyshUrl).hostname}`
-            : "Not connected to a notification service"}
-        </ItemTitle>
-      </ItemContent>
-      <ItemActions>
-        <Dialog>
-          <DialogTrigger
-            render={
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setNtfyshUrlInput(data.ntfyshUrl ?? "")}
-              >
-                Configure
-              </Button>
-            }
-          />
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Configure ntfy.sh</DialogTitle>
-              <DialogDescription>
-                Schmierzettel can send notifications via{" "}
-                <a href="https://ntfy.sh" target="_blank">
-                  ntfy.sh
-                </a>
-                , which you can also self-host. Configure the instance and topic
-                for notifications below.
-              </DialogDescription>
-            </DialogHeader>
-            <Field>
-              <FieldLabel>ntfy.sh URL</FieldLabel>
-              <Input
-                type="url"
-                value={ntfyshUrlInput}
-                onChange={(e) => setNtfyshUrlInput(e.target.value)}
-                placeholder="https://ntfy.sh/your-topic"
-                className="input input-bordered w-full"
-              />
-            </Field>
-            <DialogFooter>
-              <DialogClose render={<Button variant="outline">Cancel</Button>} />
-              {data.ntfyshUrl !== null && (
-                <DialogClose
-                  render={
-                    <Button
-                      variant="destructive"
-                      onClick={() =>
-                        dispatchOperation("setNtfyshUrl", { ntfyshUrl: null })
-                      }
-                    >
-                      Disconnect
-                    </Button>
-                  }
-                />
-              )}
-              <DialogClose
-                render={
-                  <Button
-                    type="submit"
-                    disabled={
-                      ntfyshUrlInput === data.ntfyshUrl ||
-                      ntfyshUrlInput.trim() === ""
-                    }
-                    onClick={() => {
-                      dispatchOperation("setNtfyshUrl", {
-                        ntfyshUrl: ntfyshUrlInput.trim(),
-                      });
-                    }}
-                  >
-                    Save
-                  </Button>
-                }
-              />
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </ItemActions>
-    </Item>
   );
 }
 
@@ -171,6 +56,12 @@ function SchmierzettelNotes() {
 
 function NoteCard({ note }: { note: Note }) {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const search = useSearch({ strict: false });
+  const parsedSearch = z
+    .object({ noteId: z.string().optional() })
+    .safeParse(search).data;
+  const editDialogOpenFromSearch = parsedSearch?.noteId === note.id;
+
   return (
     <Card size="sm" className="w-full h-fit">
       <CardContent className="flex-1 overflow-y-auto">
@@ -182,7 +73,7 @@ function NoteCard({ note }: { note: Note }) {
           Edit
         </Button>
         <CaptureOrEditNoteDialog
-          isOpen={editDialogOpen}
+          isOpen={editDialogOpen || editDialogOpenFromSearch}
           onOpenChange={setEditDialogOpen}
           existingNote={note}
         />
@@ -238,7 +129,7 @@ function CaptureOrEditNoteDialog({
           value={noteTextInput}
           onChange={(e) => setNoteTextInput(e.target.value)}
         />
-        <NotificationsList
+        <EditableNotificationsList
           notifications={notifications}
           setNotifications={setNotifications}
         />
@@ -286,128 +177,5 @@ function CaptureOrEditNoteDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
-}
-
-function NotificationsList({
-  notifications,
-  setNotifications,
-}: {
-  notifications: Notification[];
-  setNotifications: (value: Notification[]) => void;
-}) {
-  return (
-    <div className="flex flex-col gap-2">
-      {notifications.map((notification) => (
-        <RemovableNotification
-          key={notification.scheduledFor}
-          notification={notification}
-          onRemove={() => {
-            setNotifications(
-              notifications.filter(
-                (n) => n.scheduledFor !== notification.scheduledFor,
-              ),
-            );
-          }}
-        />
-      ))}
-      <NotificationAdder
-        addNotification={(notification) => {
-          if (
-            notifications.some(
-              (n) => n.scheduledFor === notification.scheduledFor,
-            )
-          ) {
-            return; // notification already exists for this time
-          }
-          setNotifications([...notifications, notification]);
-        }}
-      />
-    </div>
-  );
-}
-
-function RemovableNotification({
-  notification,
-  onRemove,
-}: {
-  notification: Notification;
-  onRemove: () => void;
-}) {
-  const scheduledForStr = formatFutureTimestampRelative(
-    notification.scheduledFor,
-  );
-
-  return (
-    <Item variant="outline" size="xs">
-      <ItemMedia variant="icon">
-        <IconBell />
-      </ItemMedia>
-      <ItemContent>
-        <ItemTitle>{scheduledForStr}</ItemTitle>
-      </ItemContent>
-      <ItemActions>
-        <Button variant="outline" size="sm" onClick={onRemove}>
-          Remove
-        </Button>
-      </ItemActions>
-    </Item>
-  );
-}
-
-function NotificationAdder({
-  addNotification,
-}: {
-  addNotification: (notification: Notification) => void;
-}) {
-  /* const notificationIntervals = [
-    { label: "5s", value: 5 * 1000 },
-    { label: "10s", value: 10 * 1000 },
-    { label: "5m", value: 5 * 60 * 1000 },
-    { label: "10m", value: 10 * 60 * 1000 },
-    { label: "15m", value: 15 * 60 * 1000 },
-    { label: "30m", value: 30 * 60 * 1000 },
-    { label: "1h", value: 1 * 60 * 60 * 1000 },
-    { label: "3h", value: 3 * 60 * 60 * 1000 },
-  ] as const; */
-  /* submit({ scheduledFor: 0 }); // todo tnp */
-
-  // return (
-  //   <Combobox
-  //     items={notificationIntervals}
-  //     itemToStringValue={(interval) => interval.label}
-  //   >
-  //     <ComboboxInput placeholder="Add Notification" />
-  //     <ComboboxContent>
-  //       <ComboboxEmpty>No preset found.</ComboboxEmpty>{" "}
-  //       {/* todo: accept and parse human time string */}
-  //       <ComboboxList>
-  //         {(item) => {
-  //           <ComboboxItem key={item.label} value={item}>
-  //             {item.label}
-  //           </ComboboxItem>;
-  //         }}
-  //       </ComboboxList>
-  //     </ComboboxContent>
-  //   </Combobox>
-  // );
-
-  // todo: remove ^
-
-  /* return <Input placeholder="Add Notification" />; */
-  return (
-    <InlineEditInput
-      placeholder="Add Notification"
-      value=""
-      onSave={(value) => {
-        const scheduledFor = parseNaturalLanguageDate(value)?.getTime();
-        if (scheduledFor) {
-          addNotification({ scheduledFor });
-          console.log("Scheduled notification for", new Date(scheduledFor));
-        } else {
-          console.log("Could not parse date from input:", value);
-        }
-      }}
-    />
   );
 }

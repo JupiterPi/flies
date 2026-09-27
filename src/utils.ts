@@ -106,7 +106,9 @@ export function formatFutureTimestampRelative(timestamp: number): string {
   // "Tomorrow at HH:mm" if tomorrow
   // "Weekday at HH:mm" if within next week
   // date and time if further away
-  return dayjs().calendar(dayjs(timestamp), {
+  return dayjs(timestamp).calendar(null, {
+    sameDay: "[Today] HH:mm",
+    nextDay: "[Tomorrow] HH:mm",
     sameElse: "DD.MM.YYYY HH:mm",
   });
 }

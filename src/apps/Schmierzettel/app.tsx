@@ -5,9 +5,9 @@ import { operations, SchmierzettelData } from "./data";
 import { FullApp, type FullAppProps } from "../fullApps";
 import { AppAssociation, type AppInstanceInfo } from "../apps";
 import type { OperationsBasedFile } from "../fullApps.server";
-import { startCheckingAndSendingNotifications } from "./app.server";
 import type z from "zod";
 import { createServerOnlyFn } from "@tanstack/react-start";
+import { startCheckingAndSendingNotifications } from "./notifications";
 
 export const app = new AppAssociation(
   ["Schmierzettel"],
