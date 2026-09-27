@@ -74,7 +74,7 @@ export const startCheckingAndSendingNotifications = createServerOnlyFn(
             method: "POST",
             body: notification.note.content,
             headers: {
-              Click: `${env.serverUrl}/${joinPath(appInstanceInfo.path)}`,
+              Click: `${env.serverUrl}/${joinPath(appInstanceInfo.path)}?note=${notification.note.id}`,
             },
           });
           if (!res.ok) {
