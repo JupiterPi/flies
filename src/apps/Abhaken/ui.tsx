@@ -168,19 +168,53 @@ function TaskCard({ task }: { task: Task }) {
 
 function TaskCompletionButton({ task }: { task: Task }) {
   const { dispatchOperation } = useAbhakenData();
-  // todo: add note
+  const [noteInput, setNoteInput] = useState("");
   return (
-    <Button
-      className="flex-1 min-w-[80px] rounded-xl ring-1 ring-foreground/10 ring-primary hover:ring-green-500/70"
-      onClick={() => {
-        dispatchOperation("completeTask", {
-          taskId: task.id,
-          timestamp: Date.now(),
-        });
-      }}
-    >
-      <IconCheck />
-    </Button>
+    <Dialog>
+      <DialogTrigger
+        render={
+          <Button className="flex-1 min-w-[80px] rounded-xl ring-1 ring-foreground/10 ring-primary hover:ring-green-500/70">
+            <IconCheck />
+          </Button>
+        }
+      />
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Complete Task "{task.title}"</DialogTitle>
+        </DialogHeader>
+
+        <Field>
+          <FieldLabel>Note (optional)</FieldLabel>
+          <Input
+            placeholder="Add a note..."
+            value={noteInput}
+            onChange={(e) => setNoteInput(e.target.value)}
+          />
+        </Field>
+
+        <DialogFooter>
+          <DialogClose render={<Button variant="outline">Cancel</Button>} />
+          <DialogClose
+            render={
+              <Button
+                onClick={() => {
+                  dispatchOperation("completeTask", {
+                    taskId: task.id,
+                    timestamp: Date.now(),
+                    note:
+                      noteInput.trim().length > 0
+                        ? noteInput.trim()
+                        : undefined,
+                  });
+                }}
+              >
+                Complete Task
+              </Button>
+            }
+          />
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -217,9 +251,19 @@ function TaskDetailsDialog({
             {task.completions.map((completion) => (
               <div
                 key={completion.completedAt}
-                className="text-sm bg-muted rounded-lg py-1 px-3 flex justify-between items-center mb-2"
+                className="text-sm bg-muted rounded-lg py-2 px-3 flex justify-between items-center mb-2"
               >
-                {formatTimestampRelative(completion.completedAt)}
+                <div>
+                  {formatTimestampRelative(completion.completedAt)}
+                  {completion.note && (
+                    <>
+                      <br />
+                      <span className="text-muted-foreground">
+                        {completion.note}
+                      </span>
+                    </>
+                  )}
+                </div>
                 {!isClosed && (
                   <Button
                     size="icon"
