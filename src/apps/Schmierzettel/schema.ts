@@ -2,7 +2,7 @@ import { produce } from "immer";
 import z from "zod";
 import { createOperation as operation, createOperations } from "../operations";
 
-// schema
+// data schema
 
 export const Notification = z.object({
   scheduledFor: z.number(),

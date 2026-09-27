@@ -13,7 +13,7 @@ import { IconEdit, IconPlus } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 import { Masonry } from "masonic";
 import { useSchmierzettelData } from "./app";
-import { Note, Notification } from "./data";
+import { Note, Notification } from "./schema";
 import { useSearch } from "@tanstack/react-router";
 import z from "zod";
 import { EditableNotificationsList, NtfyshConfigurer } from "./notifications";

@@ -1,7 +1,7 @@
 import { createContext, useContext } from "react";
 import { SchmierzettelUI } from "./ui";
 import { DefaultAppLayout, PathBreadcrumbs } from "#/routes/_loggedIn/$";
-import { operations, SchmierzettelData } from "./data";
+import { operations, SchmierzettelData } from "./schema";
 import { FullApp, type FullAppProps } from "../fullApps";
 import { AppAssociation, type AppInstanceInfo } from "../apps";
 import type { OperationsBasedFile } from "../fullApps.server";

@@ -13,7 +13,7 @@ import {
   parseNaturalLanguageDate,
 } from "#/utils";
 import { IconBell, IconBellCheck, IconBellOff } from "@tabler/icons-react";
-import { Notification, operations, SchmierzettelData } from "./data";
+import { Notification, operations, SchmierzettelData } from "./schema";
 import { createServerOnlyFn } from "@tanstack/react-start";
 import type { AppInstanceInfo } from "../apps";
 import type { OperationsBasedFile } from "../fullApps.server";
