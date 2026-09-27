@@ -12,18 +12,16 @@ import {
 } from "#/components/ui/dialog";
 import { Textarea } from "#/components/ui/textarea";
 import {
+  IconBell,
   IconBellCheck,
   IconBellOff,
-  IconBellPlus,
-  IconBellRinging,
   IconEdit,
   IconPlus,
 } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 import { Masonry } from "masonic";
-import { Toggle } from "#/components/ui/toggle";
 import { useSchmierzettelData } from "./app";
-import { Note } from "./data";
+import { Note, Notification } from "./data";
 import {
   Item,
   ItemActions,
@@ -33,6 +31,11 @@ import {
 } from "#/components/ui/item";
 import { Field, FieldLabel } from "#/components/ui/field";
 import { Input } from "#/components/ui/input";
+import { InlineEditInput } from "#/components/inline-edit-input";
+import {
+  formatFutureTimestampRelative,
+  parseNaturalLanguageDate,
+} from "#/utils";
 
 export function SchmierzettelUI() {
   return (
@@ -221,16 +224,9 @@ function CaptureOrEditNoteDialog({
       setNoteTextInput(existingNote?.content ?? "");
     }
   }, [isOpen]);
-  const notificationIntervals: Record<string, number> = {
-    "10s": 10 * 1000,
-    "5m": 5 * 60 * 1000,
-    "10m": 10 * 60 * 1000,
-    "15m": 15 * 60 * 1000,
-    "30m": 30 * 60 * 1000,
-    "1h": 1 * 60 * 60 * 1000,
-    "3h": 3 * 60 * 60 * 1000,
-  };
-  const [notifications, setNotifications] = useState<string[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>(
+    existingNote?.notifications || [],
+  );
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -242,32 +238,10 @@ function CaptureOrEditNoteDialog({
           value={noteTextInput}
           onChange={(e) => setNoteTextInput(e.target.value)}
         />
-        {existingNote === null && (
-          <div className="flex gap-2 flex-wrap">
-            {Object.entries(notificationIntervals).map(([interval, _]) => (
-              <Toggle
-                key={interval}
-                variant="outline"
-                onClick={() => {
-                  if (notifications.includes(interval)) {
-                    setNotifications(
-                      notifications.filter((n) => n !== interval),
-                    );
-                  } else {
-                    setNotifications([...notifications, interval]);
-                  }
-                }}
-              >
-                {notifications.includes(interval) ? (
-                  <IconBellRinging />
-                ) : (
-                  <IconBellPlus />
-                )}
-                {interval}
-              </Toggle>
-            ))}
-          </div>
-        )}
+        <NotificationsList
+          notifications={notifications}
+          setNotifications={setNotifications}
+        />
         <DialogFooter>
           <DialogClose render={<Button variant="outline">Cancel</Button>} />
           {existingNote && (
@@ -289,24 +263,18 @@ function CaptureOrEditNoteDialog({
               <Button
                 disabled={noteTextInput.trim() === ""}
                 onClick={async () => {
-                  const parsedNotifications = notifications.map(
-                    (notification) => ({
-                      scheduledFor:
-                        Date.now() + notificationIntervals[notification],
-                    }),
-                  );
                   if (existingNote) {
                     dispatchOperation("updateNote", {
                       id: existingNote.id,
                       content: noteTextInput,
                       timestamp: Date.now(),
-                      notifications: parsedNotifications,
+                      notifications,
                     });
                   } else {
                     dispatchOperation("addNote", {
                       content: noteTextInput,
                       timestamp: Date.now(),
-                      notifications: parsedNotifications,
+                      notifications,
                     });
                   }
                 }}
@@ -318,5 +286,128 @@ function CaptureOrEditNoteDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function NotificationsList({
+  notifications,
+  setNotifications,
+}: {
+  notifications: Notification[];
+  setNotifications: (value: Notification[]) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      {notifications.map((notification) => (
+        <RemovableNotification
+          key={notification.scheduledFor}
+          notification={notification}
+          onRemove={() => {
+            setNotifications(
+              notifications.filter(
+                (n) => n.scheduledFor !== notification.scheduledFor,
+              ),
+            );
+          }}
+        />
+      ))}
+      <NotificationAdder
+        addNotification={(notification) => {
+          if (
+            notifications.some(
+              (n) => n.scheduledFor === notification.scheduledFor,
+            )
+          ) {
+            return; // notification already exists for this time
+          }
+          setNotifications([...notifications, notification]);
+        }}
+      />
+    </div>
+  );
+}
+
+function RemovableNotification({
+  notification,
+  onRemove,
+}: {
+  notification: Notification;
+  onRemove: () => void;
+}) {
+  const scheduledForStr = formatFutureTimestampRelative(
+    notification.scheduledFor,
+  );
+
+  return (
+    <Item variant="outline" size="xs">
+      <ItemMedia variant="icon">
+        <IconBell />
+      </ItemMedia>
+      <ItemContent>
+        <ItemTitle>{scheduledForStr}</ItemTitle>
+      </ItemContent>
+      <ItemActions>
+        <Button variant="outline" size="sm" onClick={onRemove}>
+          Remove
+        </Button>
+      </ItemActions>
+    </Item>
+  );
+}
+
+function NotificationAdder({
+  addNotification,
+}: {
+  addNotification: (notification: Notification) => void;
+}) {
+  /* const notificationIntervals = [
+    { label: "5s", value: 5 * 1000 },
+    { label: "10s", value: 10 * 1000 },
+    { label: "5m", value: 5 * 60 * 1000 },
+    { label: "10m", value: 10 * 60 * 1000 },
+    { label: "15m", value: 15 * 60 * 1000 },
+    { label: "30m", value: 30 * 60 * 1000 },
+    { label: "1h", value: 1 * 60 * 60 * 1000 },
+    { label: "3h", value: 3 * 60 * 60 * 1000 },
+  ] as const; */
+  /* submit({ scheduledFor: 0 }); // todo tnp */
+
+  // return (
+  //   <Combobox
+  //     items={notificationIntervals}
+  //     itemToStringValue={(interval) => interval.label}
+  //   >
+  //     <ComboboxInput placeholder="Add Notification" />
+  //     <ComboboxContent>
+  //       <ComboboxEmpty>No preset found.</ComboboxEmpty>{" "}
+  //       {/* todo: accept and parse human time string */}
+  //       <ComboboxList>
+  //         {(item) => {
+  //           <ComboboxItem key={item.label} value={item}>
+  //             {item.label}
+  //           </ComboboxItem>;
+  //         }}
+  //       </ComboboxList>
+  //     </ComboboxContent>
+  //   </Combobox>
+  // );
+
+  // todo: remove ^
+
+  /* return <Input placeholder="Add Notification" />; */
+  return (
+    <InlineEditInput
+      placeholder="Add Notification"
+      value=""
+      onSave={(value) => {
+        const scheduledFor = parseNaturalLanguageDate(value)?.getTime();
+        if (scheduledFor) {
+          addNotification({ scheduledFor });
+          console.log("Scheduled notification for", new Date(scheduledFor));
+        } else {
+          console.log("Could not parse date from input:", value);
+        }
+      }}
+    />
   );
 }
