@@ -29,7 +29,7 @@ export class OperationsBasedFile<
     operations extends Record<string, Operation<any, any>>,
   >(path: string, app: FullApp<schema, operations>) {
     const fileStore = await Store.fromFile(
-      Bun.file(env.paths.fs + joinPath(path)),
+      Bun.file(env.paths.fs + "/" + joinPath(path)),
       app.dataSchema,
       app.newFileDataJson,
     );

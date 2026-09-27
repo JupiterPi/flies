@@ -5,7 +5,7 @@ import { runSavedApps } from "./apps/runningAppsManager";
 import { instantiateApp } from "./apps/appsRegistry";
 import { env } from "./env";
 import { permissions } from "./server/permissions";
-import { pathFilename } from "./utils";
+import { joinPath, pathFilename } from "./utils";
 
 runSavedApps();
 
@@ -49,7 +49,7 @@ async function routeRawFileRequest(request: Request) {
         }
         // todo: when no session cookie is detected, instead of failing, it would be nice to instead
         // return the app with a login prompt, and then it would retry the request with the session cookie
-        const fsFile = Bun.file(`${env.paths.fs}${filePath}`);
+        const fsFile = Bun.file(env.paths.fs + "/" + joinPath(filePath));
         if (await fsFile.exists()) {
           return new Response(fsFile.stream(), {
             headers: {

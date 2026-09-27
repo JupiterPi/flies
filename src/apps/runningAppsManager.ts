@@ -41,7 +41,7 @@ export async function runSavedApps() {
   const appFilePaths = appFileStore.read().appFilePaths;
   console.log("Running saved apps:", appFilePaths);
   for (const filePath of appFilePaths) {
-    const file = Bun.file(env.paths.fs + joinPath(filePath));
+    const file = Bun.file(env.paths.fs + "/" + joinPath(filePath));
     if (!(await file.exists())) {
       console.warn(`App file ${filePath} does not exist anymore.`);
       continue;
