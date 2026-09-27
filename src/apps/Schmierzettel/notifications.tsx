@@ -32,6 +32,7 @@ import {
   DialogTrigger,
   DialogClose,
 } from "#/components/ui/dialog";
+import { Badge } from "#/components/ui/badge";
 
 // sending notifications
 
@@ -283,5 +284,25 @@ function NotificationAdder({
         }
       }}
     />
+  );
+}
+
+export function NotificationBadges({
+  notifications,
+}: {
+  notifications: Notification[];
+}) {
+  const notificationsStr = notifications.map((notification) =>
+    formatFutureTimestampRelative(notification.scheduledFor),
+  );
+  return (
+    <div className="flex flex-wrap gap-2">
+      {notificationsStr.map((str, i) => (
+        <Badge key={i} variant="outline">
+          <IconBell />
+          {str}
+        </Badge>
+      ))}
+    </div>
   );
 }

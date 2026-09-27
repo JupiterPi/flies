@@ -41,6 +41,7 @@
     "class-variance-authority": "^0.7.1",
     "classnames": "^2.5.1",
     "clsx": "^2.1.1",
+    "cn": "^0.4.0",
     "dayjs": "^1.11.23",
     "immer": "^11.1.18",
     "masonic": "^4.1.0",

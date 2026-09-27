@@ -1,35 +1,80 @@
 import { Button } from "#/components/ui/button";
 import { Card, CardContent, CardFooter } from "#/components/ui/card";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "#/components/ui/dialog";
 import { Textarea } from "#/components/ui/textarea";
-import { IconEdit, IconPlus } from "@tabler/icons-react";
-import { useEffect, useState } from "react";
+import { IconPlus } from "@tabler/icons-react";
+import { useState } from "react";
 import { Masonry } from "masonic";
 import { useSchmierzettelData } from "./app";
 import { Note, Notification } from "./schema";
-import { useSearch } from "@tanstack/react-router";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import z from "zod";
-import { EditableNotificationsList, NtfyshConfigurer } from "./notifications";
+import {
+  EditableNotificationsList,
+  NotificationBadges,
+  NtfyshConfigurer,
+} from "./notifications";
 
 export function SchmierzettelUI() {
-  return (
-    <>
-      <div className="mt-2">
-        <NtfyshConfigurer />
-      </div>
-      <SchmierzettelNotes />
-    </>
-  );
+  const search = useSearch({ strict: false });
+  const parsedSearch = z
+    .object({
+      newNote: z.string().optional(),
+      note: z.string().optional(),
+    })
+    .safeParse(search).data;
+  const navigation =
+    parsedSearch?.newNote === ""
+      ? { page: "note", existingNoteId: undefined }
+      : parsedSearch?.note
+        ? { page: "note", existingNoteId: parsedSearch.note }
+        : { page: "home" };
+
+  const _navigate = useNavigate();
+  const navigateToHome = () =>
+    _navigate({ to: "." /* for looser type checking on search */ });
+  const navigateToNewNote = () =>
+    _navigate({ to: ".", search: { newNote: "" } });
+  const navigateToNote = (noteId: string | null) =>
+    _navigate({
+      to: ".",
+      search: { note: noteId ?? undefined },
+    });
+
+  const { data } = useSchmierzettelData();
+
+  if (navigation.page === "home") {
+    return (
+      <>
+        <div className="mt-2">
+          <NtfyshConfigurer />
+        </div>
+        <SchmierzettelNotes
+          onOpenNote={(noteId) => navigateToNote(noteId)}
+          onCreateNote={() => navigateToNewNote()}
+        />
+      </>
+    );
+  }
+  if (navigation.page === "note") {
+    const note = data.notes.find(
+      (note) => note.id === navigation.existingNoteId,
+    );
+    return (
+      <CaptureOrEditNoteDialog
+        existingNote={note ?? null}
+        navigateToHome={navigateToHome}
+      />
+    );
+  }
 }
 
-function SchmierzettelNotes() {
+function SchmierzettelNotes({
+  onOpenNote,
+  onCreateNote,
+}: {
+  onOpenNote: (noteId: string) => void;
+  onCreateNote: () => void;
+}) {
   const { data } = useSchmierzettelData();
   return (
     <div className="typeset mt-4">
@@ -38,7 +83,7 @@ function SchmierzettelNotes() {
         <div className="text-muted-foreground italic">No notes yet.</div>
       )}
       <div className="my-4">
-        <CreateNoteButton />
+        <CreateNoteButton onClick={onCreateNote} />
       </div>
       <div className="flex flex-wrap gap-4">
         <Masonry
@@ -47,135 +92,115 @@ function SchmierzettelNotes() {
           columnGutter={16}
           columnWidth={300}
           overscanBy={5}
-          render={(data) => <NoteCard note={data.data} />}
+          render={(data) => (
+            <NoteCard
+              note={data.data}
+              onOpen={() => onOpenNote(data.data.id)}
+            />
+          )}
         ></Masonry>
       </div>
     </div>
   );
 }
 
-function NoteCard({ note }: { note: Note }) {
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const search = useSearch({ strict: false });
-  const parsedSearch = z
-    .object({ noteId: z.string().optional() })
-    .safeParse(search).data;
-  const editDialogOpenFromSearch = parsedSearch?.noteId === note.id;
-
+function NoteCard({ note, onOpen }: { note: Note; onOpen: () => void }) {
   return (
-    <Card size="sm" className="w-full h-fit">
-      <CardContent className="flex-1 overflow-y-auto">
-        <div className="whitespace-pre-line">{note.content}</div>
+    <Card
+      size="sm"
+      className="w-full h-fit cursor-pointer hover:bg-muted"
+      onClick={onOpen}
+    >
+      <CardContent className="flex-1 overflow-y-auto flex flex-col gap-2">
+        <div className="whitespace-pre-line">
+          {note.content}
+          {note.content.trim().length === 0 && (
+            <span className="text-muted-foreground italic">Empty Note</span>
+          )}
+        </div>
+        <NotificationBadges notifications={note.notifications} />
       </CardContent>
-      <CardFooter className="justify-end">
-        <Button variant="outline" onClick={() => setEditDialogOpen(true)}>
-          <IconEdit />
-          Edit
-        </Button>
-        <CaptureOrEditNoteDialog
-          isOpen={editDialogOpen || editDialogOpenFromSearch}
-          onOpenChange={setEditDialogOpen}
-          existingNote={note}
-        />
-      </CardFooter>
     </Card>
   );
 }
 
-function CreateNoteButton() {
-  const [dialogOpen, setDialogOpen] = useState(false);
+function CreateNoteButton({ onClick }: { onClick: () => void }) {
   return (
     <>
-      <Button onClick={() => setDialogOpen(true)}>
+      <Button onClick={onClick}>
         <IconPlus />
         Capture Note
       </Button>
-      <CaptureOrEditNoteDialog
-        isOpen={dialogOpen}
-        onOpenChange={setDialogOpen}
-        existingNote={null}
-      />
     </>
   );
 }
 
 function CaptureOrEditNoteDialog({
-  isOpen,
-  onOpenChange,
   existingNote,
+  navigateToHome,
 }: {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
   existingNote: Note | null;
+  navigateToHome: () => void;
 }) {
   const { dispatchOperation } = useSchmierzettelData();
-  const [noteTextInput, setNoteTextInput] = useState("");
-  useEffect(() => {
-    if (isOpen) {
-      setNoteTextInput(existingNote?.content ?? "");
-    }
-  }, [isOpen]);
+  const [noteTextInput, setNoteTextInput] = useState(
+    existingNote?.content || "",
+  );
   const [notifications, setNotifications] = useState<Notification[]>(
     existingNote?.notifications || [],
   );
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{existingNote ? "Edit" : "Capture"} Note</DialogTitle>
-        </DialogHeader>
+    <Card className="mt-4 w-full mx-auto max-w-[500px] [--card-spacing:--spacing(4)]">
+      <CardContent className="flex flex-col gap-4">
         <Textarea
           placeholder="Enter your note here"
           value={noteTextInput}
           onChange={(e) => setNoteTextInput(e.target.value)}
+          cols={30}
         />
         <EditableNotificationsList
           notifications={notifications}
           setNotifications={setNotifications}
         />
-        <DialogFooter>
-          <DialogClose render={<Button variant="outline">Cancel</Button>} />
-          {existingNote && (
-            <DialogClose
-              render={
-                <Button
-                  variant="destructive"
-                  onClick={() => {
-                    dispatchOperation("deleteNote", { id: existingNote.id });
-                  }}
-                >
-                  Delete
-                </Button>
-              }
-            />
-          )}
-          <DialogClose
-            render={
-              <Button
-                disabled={noteTextInput.trim() === ""}
-                onClick={async () => {
-                  if (existingNote) {
-                    dispatchOperation("updateNote", {
-                      id: existingNote.id,
-                      content: noteTextInput,
-                      timestamp: Date.now(),
-                      notifications,
-                    });
-                  } else {
-                    dispatchOperation("addNote", {
-                      content: noteTextInput,
-                      timestamp: Date.now(),
-                      notifications,
-                    });
-                  }
-                }}
-              >
-                Save
-              </Button>
+      </CardContent>
+      <CardFooter className="justify-end gap-2">
+        <Button variant="outline" onClick={navigateToHome}>
+          Cancel
+        </Button>
+        {existingNote && (
+          <Button
+            variant="destructive"
+            onClick={() => {
+              dispatchOperation("deleteNote", { id: existingNote.id });
+              navigateToHome();
+            }}
+          >
+            Delete
+          </Button>
+        )}
+        <Button
+          disabled={noteTextInput.trim() === ""}
+          onClick={async () => {
+            if (existingNote) {
+              dispatchOperation("updateNote", {
+                id: existingNote.id,
+                content: noteTextInput,
+                timestamp: Date.now(),
+                notifications,
+              });
+            } else {
+              dispatchOperation("addNote", {
+                content: noteTextInput,
+                timestamp: Date.now(),
+                notifications,
+              });
             }
-          />
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+            navigateToHome();
+          }}
+        >
+          Save
+        </Button>
+      </CardFooter>
+    </Card>
   );
 }
