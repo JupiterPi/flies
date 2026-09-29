@@ -1,16 +1,19 @@
-import { Milkdown, MilkdownProvider, useEditor } from "@milkdown/react";
-import { Crepe } from "@milkdown/crepe";
-import "@milkdown/crepe/theme/common/style.css";
-import "@milkdown/crepe/theme/frame-dark.css";
-import "./milkdown.css";
-import { useState } from "react";
 import {
   App,
   AppAssociation,
   type AppInstanceInfo,
   type AppProps,
 } from "../apps";
-import { PathBreadcrumbs } from "#/routes/_loggedIn/$";
+import { DefaultAppLayout, PathBreadcrumbs } from "#/routes/_loggedIn/$";
+import { useEffect, useState } from "react";
+
+import CodeMirror, { EditorView } from "@uiw/react-codemirror";
+import {
+  markdown as cmMarkdown,
+  markdownLanguage,
+} from "@codemirror/lang-markdown";
+import { languages } from "@codemirror/language-data";
+import { aura } from "./theme";
 
 export const app = new AppAssociation(
   [".md"],
@@ -24,42 +27,56 @@ class TomatenmarkApp extends App {
 
   override AppComponent = ({ data, setData, saveStatus }: AppProps) => {
     return (
-      <MilkdownProvider>
-        {/* status bar */}
-        <div className="mt-8 ml-[60px] flex gap-4 items-center">
-          {<PathBreadcrumbs path={this.instanceInfo.path} />}
-          {this.SaveStatusIndicator(saveStatus)}
-        </div>
-
-        <MilkdownEditor initialMarkdown={data} onChange={setData} />
-      </MilkdownProvider>
+      <div>
+        <DefaultAppLayout
+          PathBreadcrumbs={<PathBreadcrumbs path={this.instanceInfo.path} />}
+          SaveStatusIndicator={this.SaveStatusIndicator(saveStatus)}
+        >
+          <TomatenmarkEditor initialMarkdown={data} onChange={setData} />
+        </DefaultAppLayout>
+      </div>
     );
   };
 }
 
-function MilkdownEditor({
+function TomatenmarkEditor({
   initialMarkdown,
   onChange,
 }: {
   initialMarkdown: string;
   onChange: (markdown: string) => void;
 }) {
-  const [markdownEverChanged, setMarkdownEverChanged] = useState(false);
-  useEditor((root) => {
-    const crepe = new Crepe({
-      root,
-      defaultValue: initialMarkdown,
-    });
-    crepe.on((listener) => {
-      listener.markdownUpdated((_, markdown) => {
-        if (markdownEverChanged || markdown !== initialMarkdown) {
-          setMarkdownEverChanged(true);
-          onChange(markdown);
-        }
-      });
-    });
-    return crepe;
-  }, []);
+  const [markdown, setMarkdown] = useState(initialMarkdown);
+  useEffect(() => {
+    onChange(markdown);
+  }, [markdown, onChange]);
 
-  return <Milkdown />;
+  return (
+    <>
+      <CodeMirror
+        value={markdown}
+        extensions={[
+          cmMarkdown({ base: markdownLanguage, codeLanguages: languages }),
+          EditorView.lineWrapping,
+        ]}
+        theme={aura}
+        onChange={setMarkdown}
+        height="100%"
+        width="100%"
+        basicSetup={{
+          lineNumbers: false,
+          foldGutter: false,
+        }}
+        autoFocus={true}
+        className="mt-2"
+      />
+
+      {/* remove focus outline */}
+      <style>{`
+        .cm-focused {
+          outline: none !important;
+        }
+      `}</style>
+    </>
+  );
 }
