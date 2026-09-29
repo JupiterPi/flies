@@ -12,7 +12,6 @@ import {
   markdown as cmMarkdown,
   markdownLanguage,
 } from "@codemirror/lang-markdown";
-import { languages } from "@codemirror/language-data";
 import { aura } from "./theme";
 
 export const app = new AppAssociation(
@@ -56,7 +55,7 @@ function TomatenmarkEditor({
       <CodeMirror
         value={markdown}
         extensions={[
-          cmMarkdown({ base: markdownLanguage, codeLanguages: languages }),
+          cmMarkdown({ base: markdownLanguage }),
           EditorView.lineWrapping,
         ]}
         theme={aura}
