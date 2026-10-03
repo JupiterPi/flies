@@ -6,13 +6,10 @@ import {
 } from "../apps";
 import { DefaultAppLayout, PathBreadcrumbs } from "#/routes/_loggedIn/$";
 import { useEffect, useState } from "react";
-
 import CodeMirror, { EditorView } from "@uiw/react-codemirror";
-import {
-  markdown as cmMarkdown,
-  markdownLanguage,
-} from "@codemirror/lang-markdown";
 import { aura } from "./theme";
+import markdownEditor from "./markdown-editor";
+import { indentUnit } from "@codemirror/language";
 
 export const app = new AppAssociation(
   [".md"],
@@ -55,8 +52,9 @@ function TomatenmarkEditor({
       <CodeMirror
         value={markdown}
         extensions={[
-          cmMarkdown({ base: markdownLanguage }),
+          markdownEditor(),
           EditorView.lineWrapping,
+          indentUnit.of("\t"),
         ]}
         theme={aura}
         onChange={setMarkdown}
@@ -69,13 +67,10 @@ function TomatenmarkEditor({
         autoFocus={true}
         className="mt-2"
       />
-
       {/* remove focus outline */}
-      <style>{`
-        .cm-focused {
-          outline: none !important;
-        }
-      `}</style>
+      <style>{` .cm-focused { outline: none !important; } `}</style>
+      {/* remove widget buffer */}
+      <style>{` .cm-widgetBuffer { display: none !important; } `}</style>
     </>
   );
 }
