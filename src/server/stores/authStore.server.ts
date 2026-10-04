@@ -2,6 +2,7 @@ import { env } from "#/env";
 import z from "zod";
 import { produce } from "immer";
 import { Store } from "./stores.server";
+import { Dashboard } from "../userConfiguration";
 
 // schema
 
@@ -10,6 +11,9 @@ export const User = z.object({
   username: z.string(),
   password: z.string(), // make this more secure, e.g. hashed with salt
   admin: z.boolean().default(false),
+  dashboard: Dashboard.default(
+    Dashboard.parse({} satisfies z.input<typeof Dashboard>),
+  ),
 });
 export type User = z.infer<typeof User>;
 
@@ -73,4 +77,16 @@ export function getShares() {
     shares: authStore.read().shares,
     publicShares: authStore.read().publicShares,
   };
+}
+
+export function setDashboard(userId: string, dashboard: Dashboard) {
+  authStore.write(
+    produce((authStore) => {
+      const user = authStore.users.find((u) => u.id === userId);
+      if (!user) throw new Error("User not found");
+      user.dashboard = Dashboard.parse(
+        dashboard satisfies z.input<typeof Dashboard>,
+      );
+    }),
+  );
 }

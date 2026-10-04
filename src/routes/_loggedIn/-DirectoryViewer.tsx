@@ -12,8 +12,9 @@ import {
   IconDownload,
   IconEdit,
   IconFile,
+  IconFileSymlink,
   IconFolder,
-  IconFolderRoot,
+  IconFolderSymlink,
   IconFolderUp,
   IconPlus,
   IconTrash,
@@ -144,7 +145,11 @@ export function FileOrDirectoryItem({
     <>
       <ItemMedia>
         {isRoot ? (
-          <IconFolderRoot className="size-5" />
+          type === "directory" ? (
+            <IconFolderSymlink className="size-5" />
+          ) : (
+            <IconFileSymlink className="size-5" />
+          )
         ) : type === "directory" ? (
           name === ".." ? (
             <IconFolderUp className="size-5" />

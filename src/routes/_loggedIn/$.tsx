@@ -9,7 +9,7 @@ import {
   BreadcrumbList,
   BreadcrumbSeparator,
 } from "#/components/ui/breadcrumb";
-import { FliesHomeLogo } from ".";
+import { FliesHomeLogo } from "../_loggedIn";
 import React from "react";
 import { useServer } from "#/client/orpc";
 import { instantiateApp } from "#/apps/appsRegistry";

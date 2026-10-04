@@ -9,6 +9,8 @@ import type {
 import { ORPCError, os } from "@orpc/server";
 import { openapi } from "@orpc/openapi";
 import { setCookie } from "@orpc/server/helpers";
+import z from "zod";
+import { Dashboard } from "./userConfiguration";
 
 // sessions
 
@@ -183,5 +185,20 @@ export const userRoutes = os.meta(openapi({ prefix: "/user" })).router({
     .use(auth())
     .handler(async () => {
       return ["f"]; // todo: fake
+    }),
+  getDashboard: os
+    .route({ method: "GET", path: "/dashboard" })
+    .use(auth())
+    .use(requireUser)
+    .handler(async ({ context }) => {
+      return context.user.dashboard;
+    }),
+  setDashboard: os
+    .route({ method: "POST", path: "/dashboard" })
+    .use(auth())
+    .use(requireUser)
+    .input(z.object({ dashboard: Dashboard }))
+    .handler(async ({ context, input }) => {
+      AuthStore.setDashboard(context.user.id, input.dashboard);
     }),
 });
