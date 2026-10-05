@@ -11,6 +11,8 @@ import { openapi } from "@orpc/openapi";
 import { setCookie } from "@orpc/server/helpers";
 import z from "zod";
 import { Dashboard } from "./userConfiguration";
+import { MemoryRateLimiter } from "@orpc/ratelimit/memory";
+import { env } from "#/env";
 
 // sessions
 
@@ -188,6 +190,11 @@ export function assertPermission(
 
 // routes
 
+const rateLimiter = new MemoryRateLimiter({
+  maxRequests: 10,
+  window: 1000 * 60, // 1 minute
+});
+
 export const userRoutes = os.meta(openapi({ prefix: "/user" })).router({
   createSession: os
     .route({ method: "POST", path: "/create-session" })
@@ -220,9 +227,34 @@ export const userRoutes = os.meta(openapi({ prefix: "/user" })).router({
       AuthStore.setDashboard(context.user.id, input.dashboard);
     }),
   getShareTokenForPathOrParent: os
+    .$context<ServerContext>()
     .route({ method: "GET", path: "/share-token-for-path-or-parent" })
     .input(z.object({ path: z.string(), sharePassword: z.string() }))
-    .handler(async ({ input }) => {
+    .handler(async ({ context, input }) => {
+      if (env.rateLimitingHeader !== "") {
+        const rateLimitKey = context.reqHeaders?.get(env.rateLimitingHeader);
+        if (!rateLimitKey) {
+          throw new ORPCError("TOO_MANY_REQUESTS", {
+            message: `Rate limiting header ${env.rateLimitingHeader} is not set.`,
+          });
+        }
+        const rateLimitStatus = await rateLimiter.limit(
+          rateLimitKey + " getShareTokenForPathOrParent",
+          {
+            weight: 2,
+          },
+        );
+        if (!rateLimitStatus.success) {
+          throw new ORPCError("TOO_MANY_REQUESTS", {
+            data: {
+              limit: rateLimitStatus.limit,
+              remaining: rateLimitStatus.remaining,
+              reset: rateLimitStatus.reset,
+            },
+          });
+        }
+      }
+
       return AuthStore.getShareTokenForPathOrParent(
         input.path,
         input.sharePassword,

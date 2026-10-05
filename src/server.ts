@@ -9,6 +9,12 @@ import { joinPath, pathFilename } from "./utils";
 
 runSavedApps();
 
+if (env.rateLimitingHeader === "") {
+  console.warn(
+    "WARNING: RATE_LIMITING_HEADER is not set. Rate limiting is disabled.",
+  );
+}
+
 const topLevelDirectories = fs
   .readdirSync(env.paths.fs, { withFileTypes: true })
   .filter((entry) => entry.isDirectory())

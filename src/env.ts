@@ -5,6 +5,7 @@ const _env = createEnv({
   server: {
     SERVER_URL: z.string().default("http://localhost:3000"),
     DATA_DIR: z.string().default("./flies-data"),
+    RATE_LIMITING_HEADER: z.string().default("cf-connecting-ip"),
   },
 
   /**
@@ -45,4 +46,5 @@ export const env = {
     data: _env.DATA_DIR,
     fs: `${_env.DATA_DIR}/fs`,
   },
+  rateLimitingHeader: _env.RATE_LIMITING_HEADER,
 };
