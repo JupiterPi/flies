@@ -7,7 +7,7 @@ import { LoginPage, useIsLoggedInAsUser, useServer } from "#/client/orpc";
 import { Dashboard } from "#/server/userConfiguration";
 import z from "zod";
 import { Button } from "#/components/ui/button";
-import { IconSettings } from "@tabler/icons-react";
+import { IconChevronLeft, IconSettings } from "@tabler/icons-react";
 import {
   Dialog,
   DialogClose,
@@ -21,6 +21,7 @@ import { Field, FieldDescription, FieldLabel } from "#/components/ui/field";
 import { Textarea } from "#/components/ui/textarea";
 import { useEffect, useState } from "react";
 import FliesHomeLogo from "#/components/FliesHomeLogo";
+import LandingPage from "./-landing-page";
 
 export const Route = createFileRoute("/")({ component: Home });
 
@@ -54,20 +55,33 @@ function Home() {
     useState<null | Dashboard>(null);
 
   const isLoggedIn = useIsLoggedInAsUser();
+  const [showLoginPage, setShowLoginPage] = useState(false);
   if (!isLoggedIn) {
-    return (
-      <LoginPage
-        justification={<>Please log in to view your dashboard.</>}
-        requireUserLogin={true}
-      />
-    );
+    if (showLoginPage) {
+      return (
+        <>
+          <Button
+            className="absolute top-6 left-6"
+            variant="secondary"
+            onClick={() => setShowLoginPage(false)}
+          >
+            <IconChevronLeft />
+          </Button>
+          <LoginPage
+            justification={<>Please log in to view your dashboard.</>}
+            requireUserLogin={true}
+          />
+        </>
+      );
+    } else {
+      return <LandingPage onShowLoginPage={() => setShowLoginPage(true)} />;
+    }
   }
+
   // todo: could make this pattern nicer by extracting a wrapper component that is
   // used in the createFileRoute({ component }) call, which would handle those
   // things automatically and reusably, but it sadly cannot be used for $.tx where
   // the route is dynamic and the auth requirements are not known at compile time
-
-  // todo: unauthenticated landing page
 
   if (error) {
     return (
