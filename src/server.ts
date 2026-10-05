@@ -27,13 +27,16 @@ async function routeRawFileRequest(request: Request) {
   const url = new URL(request.url);
   for (const topLevelDirectory of topLevelDirectories) {
     if (url.pathname?.startsWith(`/${topLevelDirectory}`)) {
+      const filePath = joinPath(decodeURIComponent(url.pathname));
       // is a request to an fs item
+      const isDirectory =
+        fs.existsSync(env.paths.fs + "/" + filePath) &&
+        fs.statSync(env.paths.fs + "/" + filePath).isDirectory();
       const rawQueryParam = url.searchParams.get("raw");
       const isRawFileRequested = rawQueryParam !== null || rawQueryParam === "";
       const isUnhandledFileType =
         instantiateApp({ path: url.pathname }) === null;
-      if (isRawFileRequested || isUnhandledFileType) {
-        const filePath = joinPath(decodeURIComponent(url.pathname));
+      if (!isDirectory && (isRawFileRequested || isUnhandledFileType)) {
         console.log("Raw file request for:", filePath);
         const auth = await authFromRequest(
           request.headers.get("Authorization"),
