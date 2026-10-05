@@ -43,8 +43,6 @@ export function createSession(user: User) {
 
 // authenticate
 
-// todo: handle share query param in client too
-
 /**
  * Ways to authenticate:
  * - Authorization header with Basic scheme (<username>:<password>) for user
@@ -205,12 +203,6 @@ export const userRoutes = os.meta(openapi({ prefix: "/user" })).router({
         sameSite: "strict",
       });
       return sessionId;
-    }),
-  getAccessibleTopLevelDirectories: os
-    .route({ method: "GET", path: "/accessible-top-level-directories" })
-    .use(auth())
-    .handler(async () => {
-      return ["f"]; // todo: fake
     }),
   getDashboard: os
     .route({ method: "GET", path: "/dashboard" })

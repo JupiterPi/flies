@@ -34,6 +34,7 @@
     "@tanstack/react-router-devtools": "latest",
     "@tanstack/react-router-ssr-query": "latest",
     "@tanstack/react-start": "latest",
+    "@tanstack/zod-adapter": "^1.167.0",
     "@uidotdev/usehooks": "^2.4.1",
     "@uiw/codemirror-extensions-langs": "^4.25.12",
     "@uiw/codemirror-theme-aura": "^4.25.12",
