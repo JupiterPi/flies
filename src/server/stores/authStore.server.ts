@@ -18,10 +18,10 @@ export const User = z.object({
 export type User = z.infer<typeof User>;
 
 export const Share = z.object({
-  id: z.string().default(() => crypto.randomUUID()),
-  name: z.string(),
   ownerId: z.string(),
-  path: z.string(),
+  path: z.string(), // todo: gitignore-style path matching
+  note: z.string().optional(),
+  password: z.string().nullable(),
   allowWrite: z.boolean().default(false),
 });
 export type Share = z.infer<typeof Share>;
@@ -32,8 +32,33 @@ export const AuthStoreSchema = z.object({
     .default(() => crypto.randomUUID().replace(/-/g, "")),
   users: z.array(User).default([]),
   shares: z.array(Share).default([]),
-  publicShares: z.array(Share).default([]),
 });
+
+// share tokens
+
+const ShareToken = z.object({
+  sharePath: z.string(),
+  sharePassword: z.string(),
+});
+function getShareToken(share: Share) {
+  return share.password
+    ? Buffer.from(
+        JSON.stringify({
+          sharePath: share.path,
+          sharePassword: share.password,
+        } satisfies z.infer<typeof ShareToken>),
+      ).toString("base64")
+    : null;
+}
+function readShareToken(shareToken: string) {
+  try {
+    return ShareToken.parse(
+      JSON.parse(Buffer.from(shareToken, "base64").toString("utf-8")),
+    );
+  } catch (e) {
+    return null;
+  }
+}
 
 // api
 
@@ -62,21 +87,53 @@ export function verifyUser(username: string, password: string) {
   return user || null;
 }
 
-export function createShare(share: Omit<z.input<typeof Share>, "id">) {
+const shareWithToken = (share: Share) => ({
+  ...share,
+  token: getShareToken(share),
+});
+
+export function getShares() {
+  return authStore.read().shares.map(shareWithToken);
+}
+
+export function resolveShareToken(shareToken: string) {
+  const deserializedToken = readShareToken(shareToken);
+  if (!deserializedToken) return null;
+  const share = authStore
+    .read()
+    .shares.find(
+      (s) =>
+        s.path === deserializedToken.sharePath &&
+        s.password === deserializedToken.sharePassword,
+    );
+  if (!share) return null;
+  return shareWithToken(share);
+}
+
+/**
+ * Must be rate limited for security!
+ */
+export function getShareTokenForPathOrParent(
+  path: string,
+  sharePassword: string,
+) {
+  const share = authStore
+    .read()
+    .shares.find(
+      (s) => path.startsWith(s.path) && s.password === sharePassword,
+    );
+  if (!share) return null;
+  return getShareToken(share);
+}
+
+export function createShare(share: z.input<typeof Share>) {
   const newShare = Share.parse(share satisfies z.input<typeof Share>);
   authStore.write(
     produce((authStore) => {
       authStore.shares.push(newShare);
     }),
   );
-  return newShare;
-}
-
-export function getShares() {
-  return {
-    shares: authStore.read().shares,
-    publicShares: authStore.read().publicShares,
-  };
+  return shareWithToken(newShare);
 }
 
 export function setDashboard(userId: string, dashboard: Dashboard) {

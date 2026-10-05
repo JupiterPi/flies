@@ -33,7 +33,8 @@ async function routeRawFileRequest(request: Request) {
       const isUnhandledFileType =
         instantiateApp({ path: url.pathname }) === null;
       if (isRawFileRequested || isUnhandledFileType) {
-        const filePath = decodeURIComponent(url.pathname);
+        const filePath = joinPath(decodeURIComponent(url.pathname));
+        console.log("Raw file request for:", filePath);
         const auth = await authFromRequest(
           request.headers.get("Authorization"),
           request.headers.get("Cookie"),
@@ -43,9 +44,12 @@ async function routeRawFileRequest(request: Request) {
           return new Response(auth.error, { status: 401 });
         }
         if (!permissions.read(filePath).check(auth.privileges)) {
-          return new Response("You do not have permission to read this path", {
-            status: 403,
-          });
+          return new Response(
+            "You do not have permission to read " + filePath,
+            {
+              status: 403,
+            },
+          );
         }
         // todo: when no session cookie is detected, instead of failing, it would be nice to instead
         // return the app with a login prompt, and then it would retry the request with the session cookie

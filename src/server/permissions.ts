@@ -23,6 +23,17 @@ export class Privileges {
     public readonly readPaths: "*" | string[],
     public readonly writePaths: "*" | string[],
   ) {}
+
+  static combine(privileges: Privileges[]): Privileges {
+    const admin = privileges.some((p) => p.admin);
+    const readPaths = privileges.some((p) => p.readPaths === "*")
+      ? "*"
+      : privileges.flatMap((p) => p.readPaths);
+    const writePaths = privileges.some((p) => p.writePaths === "*")
+      ? "*"
+      : privileges.flatMap((p) => p.writePaths);
+    return new Privileges(admin, readPaths, writePaths);
+  }
 }
 
 export const permissions = {
@@ -35,15 +46,17 @@ export const permissions = {
     check: (privileges: Privileges) =>
       privileges.readPaths === "*" ||
       privileges.readPaths.some((p) => path.startsWith(p)) ||
-      AuthStore.getShares().publicShares.some((s) => path.startsWith(s.path)),
+      AuthStore.getShares().some(
+        (s) => s.password === null && path.startsWith(s.path),
+      ),
   }),
   write: (path: string) => ({
     description: `write to path ${path}`,
     check: (privileges: Privileges) =>
       privileges.writePaths === "*" ||
       privileges.writePaths.some((p) => path.startsWith(p)) ||
-      AuthStore.getShares().publicShares.some(
-        (s) => path.startsWith(s.path) && s.allowWrite,
+      AuthStore.getShares().some(
+        (s) => s.password === null && path.startsWith(s.path) && s.allowWrite,
       ),
   }),
   createShares: {

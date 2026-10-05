@@ -14,18 +14,34 @@ export const fsRoutes = os.meta(openapi({ prefix: "/fs" })).router({
     .route({ method: "GET", path: "/info/{+path}" })
     .use(auth())
     .input(z.object({ path: z.string() }))
-    .handler(async ({ context, input }) => {
-      assertPermission(context.privileges, permissions.read(input.path));
-      const path = env.paths.fs + "/" + joinPath(input.path);
-      if (await fs.exists(path)) {
-        const stat = await fs.stat(path);
-        return stat.isDirectory()
-          ? { type: "directory" as const }
-          : { type: "file" as const };
-      } else {
-        return { type: "not_found" as const };
-      }
-    }),
+    .handler(
+      async ({
+        context,
+        input,
+      }): Promise<
+        | { type: "not_authenticated" | "not_found" }
+        | { type: "directory" | "file"; mayWrite: boolean }
+      > => {
+        const permitted = permissions
+          .read(input.path)
+          .check(context.privileges);
+        if (!permitted) {
+          return { type: "not_authenticated" };
+        }
+        const mayWrite = permissions
+          .write(input.path)
+          .check(context.privileges);
+        const path = env.paths.fs + "/" + joinPath(input.path);
+        if (await fs.exists(path)) {
+          const stat = await fs.stat(path);
+          return stat.isDirectory()
+            ? { type: "directory", mayWrite }
+            : { type: "file", mayWrite };
+        } else {
+          return { type: "not_found" };
+        }
+      },
+    ),
   listDir: os
     .route({ method: "GET", path: "/list/{+path}" })
     .use(auth())

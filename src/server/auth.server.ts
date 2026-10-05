@@ -43,30 +43,58 @@ export function createSession(user: User) {
 
 // authenticate
 
+// todo: handle share query param in client too
+
+/**
+ * Ways to authenticate:
+ * - Authorization header with Basic scheme (<username>:<password>) for user
+ * - Authorization header with Basic scheme ("share":<share token>) for share
+ * - there may be multiple Basic scheme authorizations, like btoa(<username>:<password>,"share":<share token>,"share":<share token>)
+ * - Authorization header with Bearer scheme (<session id>) for session
+ * - Cookie header with sessionId cookie (<session id>) for session
+ * - Query param "share" with share token for share
+ */
 export async function authFromRequest(
   authHeader: string | null,
   cookieHeader: string | null,
   shareQueryParam: string | null,
 ): Promise<{ user?: User; privileges: Privileges } | { error: string }> {
-  type AuthenticationMethod = () => Promise<
-    { user?: User; privileges: Privileges } | null | { error: string }
-  >;
+  type AuthenticationMethod = () =>
+    { user?: User; privileges: Privileges } | null | { error: string };
 
   // try to authenticate from various sources
-  const authFromAuthHeader: AuthenticationMethod = async () => {
+  const authFromAuthHeader: AuthenticationMethod = () => {
     if (!authHeader) return null;
     if (authHeader.startsWith("Basic ")) {
-      const credentials = atob(authHeader.slice("Basic ".length)).split(":");
-      if (credentials.length !== 2) {
-        return { error: "Invalid Basic auth header" };
+      const multipleCredentials = atob(authHeader.slice("Basic ".length))
+        .split(",")
+        .map((c) => c.split(":"));
+      let user = undefined;
+      let privileges = Privileges.unauthenticated();
+      for (const credentials of multipleCredentials) {
+        if (credentials.length !== 2) {
+          return { error: "Invalid Basic auth header" };
+        }
+        const [username, password] = credentials;
+        if (username === "share") {
+          const share = AuthStore.resolveShareToken(password);
+          if (!share) continue;
+          privileges = Privileges.combine([
+            privileges,
+            Privileges.forShare(share),
+          ]);
+        } else {
+          const u = AuthStore.verifyUser(username, password);
+          if (!u) continue;
+          if (user) return { error: "Multiple user credentials provided" };
+          user = u;
+          privileges = Privileges.combine([privileges, Privileges.forUser(u)]);
+        }
       }
-      const [username, password] = credentials;
-      const user = AuthStore.verifyUser(username, password);
-      if (!user) return { error: "Invalid username or password" };
-      return {
-        user,
-        privileges: Privileges.forUser(user),
-      };
+      if (user || privileges !== Privileges.unauthenticated()) {
+        return { user, privileges };
+      }
+      return { error: "Couldn't authenticate with provided credentials" };
     }
     if (authHeader.startsWith("Bearer ")) {
       const session = getSession(authHeader.slice("Bearer ".length));
@@ -79,7 +107,7 @@ export async function authFromRequest(
         "Invalid Authorization header: Expected Basic (with username/password) or Bearer (with session id) scheme",
     };
   };
-  const authFromSessionCookie: AuthenticationMethod = async () => {
+  const authFromSessionCookie: AuthenticationMethod = () => {
     if (!cookieHeader) return null;
     const sessionId = new Bun.CookieMap(cookieHeader).get("sessionId");
     if (!sessionId) return null;
@@ -87,21 +115,19 @@ export async function authFromRequest(
     if (!session) return { error: "Invalid or expired session (cookie)" };
     return session;
   };
-  const authFromShareQueryParam: AuthenticationMethod = async () => {
+  const authFromShareQueryParam: AuthenticationMethod = () => {
     if (!shareQueryParam) return null;
-    const share = (await AuthStore.getShares()).shares.find(
-      (s) => s.id === shareQueryParam,
-    );
-    if (!share) return { error: "Invalid share ID" };
+    const share = AuthStore.resolveShareToken(shareQueryParam);
+    if (!share) return { error: "Invalid share query param" };
     return {
       user: undefined,
       privileges: Privileges.forShare(share),
     };
   };
   const auth =
-    (await authFromAuthHeader()) ||
-    (await authFromSessionCookie()) ||
-    (await authFromShareQueryParam());
+    authFromAuthHeader() ||
+    authFromSessionCookie() ||
+    authFromShareQueryParam();
 
   if (auth && "error" in auth) {
     return { error: auth.error };
@@ -200,5 +226,15 @@ export const userRoutes = os.meta(openapi({ prefix: "/user" })).router({
     .input(z.object({ dashboard: Dashboard }))
     .handler(async ({ context, input }) => {
       AuthStore.setDashboard(context.user.id, input.dashboard);
+    }),
+  getShareTokenForPathOrParent: os
+    .route({ method: "GET", path: "/share-token-for-path-or-parent" })
+    .input(z.object({ path: z.string(), sharePassword: z.string() }))
+    .handler(async ({ input }) => {
+      return AuthStore.getShareTokenForPathOrParent(
+        input.path,
+        input.sharePassword,
+      );
+      // todo: must be rate limited!
     }),
 });

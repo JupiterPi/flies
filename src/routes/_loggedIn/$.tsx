@@ -11,7 +11,7 @@ import {
 } from "#/components/ui/breadcrumb";
 import { FliesHomeLogo } from "../_loggedIn";
 import React from "react";
-import { useServer } from "#/client/orpc";
+import { LoginPage, useAuthInvalidationKey, useServer } from "#/client/orpc";
 import { instantiateApp } from "#/apps/appsRegistry";
 
 export const Route = createFileRoute("/_loggedIn/$")({
@@ -23,8 +23,9 @@ function RouteComponent() {
   const { client, fs } = useServer();
   const path = Route.useParams()._splat!;
 
+  const authInvalidationKey = useAuthInvalidationKey();
   const remoteItem = useQuery({
-    queryKey: ["remoteFile", path],
+    queryKey: ["remoteFile", path, authInvalidationKey],
     queryFn: () => fs.getFileOrDirectoryInfo(path),
   });
 
@@ -40,9 +41,26 @@ function RouteComponent() {
     );
   }
 
-  if (!remoteItem.data) {
+  if (!remoteItem.data || remoteItem.data.type === "not_found") {
     return <ErrorPage>File or directory not found</ErrorPage>;
   }
+
+  if (remoteItem.data.type === "not_authenticated") {
+    return (
+      <LoginPage
+        sharePath={path}
+        justification={
+          <>
+            You are not authenticated to access the file or directory at{" "}
+            <span className="font-mono">{path}</span>. Please log in to
+            continue.
+          </>
+        }
+      />
+    );
+  }
+
+  // todo: handle readonly shares
 
   if (remoteItem.data.type === "file") {
     const downloadLink = remoteItem.data.downloadLink;

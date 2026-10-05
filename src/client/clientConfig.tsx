@@ -5,12 +5,13 @@ import z from "zod";
 // schema
 
 const ClientConfig = z.object({
-  savedCredentials: z
+  savedUserCredentials: z
     .object({
       username: z.string(),
       password: z.string(),
     })
     .optional(),
+  savedShareTokens: z.array(z.string()).default([]),
 });
 export type ClientConfig = z.infer<typeof ClientConfig>;
 

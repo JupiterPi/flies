@@ -3,7 +3,7 @@ import { FileOrDirectoryItem } from "./-DirectoryViewer";
 import { ModeToggle } from "#/components/theme-toggle";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ErrorPage } from "./$";
-import { useServer } from "#/client/orpc";
+import { LoginPage, useIsLoggedInAsUser, useServer } from "#/client/orpc";
 import { FliesHomeLogo } from "../_loggedIn";
 import { Dashboard } from "#/server/userConfiguration";
 import z from "zod";
@@ -50,14 +50,30 @@ function Home() {
     );
   };
 
+  const [configurationInput, setConfigurationInput] =
+    useState<null | Dashboard>(null);
+
+  const isLoggedIn = useIsLoggedInAsUser();
+  if (!isLoggedIn) {
+    return (
+      <LoginPage
+        justification={<>Please log in to view your dashboard.</>}
+        requireUserLogin={true}
+      />
+    );
+  }
+  // todo: could make this pattern nicer by extracting a wrapper component that is
+  // used in the createFileRoute({ component }) call, which would handle those
+  // things automatically and reusably, but it sadly cannot be used for $.tx where
+  // the route is dynamic and the auth requirements are not known at compile time
+
+  // todo: unauthenticated landing page
+
   if (error) {
     return (
       <ErrorPage>Error fetching user dashboard: {String(error)}</ErrorPage>
     );
   }
-
-  const [configurationInput, setConfigurationInput] =
-    useState<null | Dashboard>(null);
 
   return (
     <>
