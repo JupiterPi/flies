@@ -1,4 +1,4 @@
-import { DefaultAppLayout, PathBreadcrumbs } from "#/routes/_loggedIn/$";
+import { DefaultAppLayout, PathBreadcrumbs } from "#/routes/$";
 import {
   App,
   AppAssociation,

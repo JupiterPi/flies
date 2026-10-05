@@ -4,7 +4,7 @@ import {
   type AppInstanceInfo,
   type AppProps,
 } from "../apps";
-import { DefaultAppLayout, PathBreadcrumbs } from "#/routes/_loggedIn/$";
+import { DefaultAppLayout, PathBreadcrumbs } from "#/routes/$";
 import { useEffect, useState } from "react";
 import CodeMirror, { EditorView } from "@uiw/react-codemirror";
 import { aura } from "./theme";

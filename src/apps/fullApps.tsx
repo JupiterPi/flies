@@ -6,7 +6,7 @@ import { useServer } from "#/client/orpc";
 import { OperationsBasedFile, operationsBasedFiles } from "./fullApps.server";
 import { createServerOnlyFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
-import { LoadingPage } from "#/routes/_loggedIn/$";
+import { LoadingPage } from "#/routes/$";
 
 export abstract class FullApp<
   schema extends z.ZodObject,

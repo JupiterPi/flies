@@ -4,7 +4,7 @@
 
 // base App
 
-import { LoadingPage } from "#/routes/_loggedIn/$";
+import { LoadingPage } from "#/routes/$";
 import { useServer } from "#/client/orpc";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";

@@ -1,5 +1,5 @@
 import z from "zod";
-import { ErrorPage } from "#/routes/_loggedIn/$";
+import { ErrorPage } from "#/routes/$";
 import type { AppInstanceInfo, AppSaveStatus } from "./apps";
 import { App } from "./apps";
 

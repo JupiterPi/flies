@@ -4,7 +4,6 @@ import { ModeToggle } from "#/components/theme-toggle";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ErrorPage } from "./$";
 import { LoginPage, useIsLoggedInAsUser, useServer } from "#/client/orpc";
-import { FliesHomeLogo } from "../_loggedIn";
 import { Dashboard } from "#/server/userConfiguration";
 import z from "zod";
 import { Button } from "#/components/ui/button";
@@ -21,8 +20,9 @@ import {
 import { Field, FieldDescription, FieldLabel } from "#/components/ui/field";
 import { Textarea } from "#/components/ui/textarea";
 import { useEffect, useState } from "react";
+import FliesHomeLogo from "#/components/FliesHomeLogo";
 
-export const Route = createFileRoute("/_loggedIn/")({ component: Home });
+export const Route = createFileRoute("/")({ component: Home });
 
 function Home() {
   const { queries } = useServer();

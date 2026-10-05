@@ -7,7 +7,7 @@ import { useClientConfig } from "./clientConfig";
 import { createTanstackQueryUtils } from "@orpc/tanstack-query";
 import { RetryLinkPlugin } from "@orpc/client/plugins";
 import { useLocation } from "@tanstack/react-router";
-import { FliesHomeLogo } from "#/routes/_loggedIn";
+import FliesHomeLogo from "#/components/FliesHomeLogo";
 import { Field, FieldGroup, FieldLabel } from "#/components/ui/field";
 import { Input } from "#/components/ui/input";
 import { Button } from "#/components/ui/button";

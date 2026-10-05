@@ -9,25 +9,20 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as LoggedInRouteImport } from './routes/_loggedIn'
-import { Route as LoggedInIndexRouteImport } from './routes/_loggedIn/index'
-import { Route as LoggedInSplatRouteImport } from './routes/_loggedIn/$'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as SplatRouteImport } from './routes/$'
 import { Route as apiApiSplatRouteImport } from './routes/(api)/api.$'
 import { Route as apiApiRpcSplatRouteImport } from './routes/(api)/api.rpc.$'
 
-const LoggedInRoute = LoggedInRouteImport.update({
-  id: '/_loggedIn',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoggedInIndexRoute = LoggedInIndexRouteImport.update({
+const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => LoggedInRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-const LoggedInSplatRoute = LoggedInSplatRouteImport.update({
+const SplatRoute = SplatRouteImport.update({
   id: '/$',
   path: '/$',
-  getParentRoute: () => LoggedInRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
 const apiApiSplatRoute = apiApiSplatRouteImport.update({
   id: '/(api)/api/$',
@@ -41,22 +36,21 @@ const apiApiRpcSplatRoute = apiApiRpcSplatRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof LoggedInIndexRoute
-  '/$': typeof LoggedInSplatRoute
+  '/': typeof IndexRoute
+  '/$': typeof SplatRoute
   '/api/$': typeof apiApiSplatRoute
   '/api/rpc/$': typeof apiApiRpcSplatRoute
 }
 export interface FileRoutesByTo {
-  '/$': typeof LoggedInSplatRoute
-  '/': typeof LoggedInIndexRoute
+  '/': typeof IndexRoute
+  '/$': typeof SplatRoute
   '/api/$': typeof apiApiSplatRoute
   '/api/rpc/$': typeof apiApiRpcSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/_loggedIn': typeof LoggedInRouteWithChildren
-  '/_loggedIn/$': typeof LoggedInSplatRoute
-  '/_loggedIn/': typeof LoggedInIndexRoute
+  '/': typeof IndexRoute
+  '/$': typeof SplatRoute
   '/(api)/api/$': typeof apiApiSplatRoute
   '/(api)/api/rpc/$': typeof apiApiRpcSplatRoute
 }
@@ -64,44 +58,32 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths: '/' | '/$' | '/api/$' | '/api/rpc/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/$' | '/' | '/api/$' | '/api/rpc/$'
-  id:
-    | '__root__'
-    | '/_loggedIn'
-    | '/_loggedIn/$'
-    | '/_loggedIn/'
-    | '/(api)/api/$'
-    | '/(api)/api/rpc/$'
+  to: '/' | '/$' | '/api/$' | '/api/rpc/$'
+  id: '__root__' | '/' | '/$' | '/(api)/api/$' | '/(api)/api/rpc/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  LoggedInRoute: typeof LoggedInRouteWithChildren
+  IndexRoute: typeof IndexRoute
+  SplatRoute: typeof SplatRoute
   apiApiSplatRoute: typeof apiApiSplatRoute
   apiApiRpcSplatRoute: typeof apiApiRpcSplatRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/_loggedIn': {
-      id: '/_loggedIn'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof LoggedInRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_loggedIn/': {
-      id: '/_loggedIn/'
+    '/': {
+      id: '/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof LoggedInIndexRouteImport
-      parentRoute: typeof LoggedInRoute
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_loggedIn/$': {
-      id: '/_loggedIn/$'
+    '/$': {
+      id: '/$'
       path: '/$'
       fullPath: '/$'
-      preLoaderRoute: typeof LoggedInSplatRouteImport
-      parentRoute: typeof LoggedInRoute
+      preLoaderRoute: typeof SplatRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/(api)/api/$': {
       id: '/(api)/api/$'
@@ -120,22 +102,9 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface LoggedInRouteChildren {
-  LoggedInSplatRoute: typeof LoggedInSplatRoute
-  LoggedInIndexRoute: typeof LoggedInIndexRoute
-}
-
-const LoggedInRouteChildren: LoggedInRouteChildren = {
-  LoggedInSplatRoute: LoggedInSplatRoute,
-  LoggedInIndexRoute: LoggedInIndexRoute,
-}
-
-const LoggedInRouteWithChildren = LoggedInRoute._addFileChildren(
-  LoggedInRouteChildren,
-)
-
 const rootRouteChildren: RootRouteChildren = {
-  LoggedInRoute: LoggedInRouteWithChildren,
+  IndexRoute: IndexRoute,
+  SplatRoute: SplatRoute,
   apiApiSplatRoute: apiApiSplatRoute,
   apiApiRpcSplatRoute: apiApiRpcSplatRoute,
 }

@@ -9,12 +9,12 @@ import {
   BreadcrumbList,
   BreadcrumbSeparator,
 } from "#/components/ui/breadcrumb";
-import { FliesHomeLogo } from "../_loggedIn";
 import React from "react";
 import { LoginPage, useAuthInvalidationKey, useServer } from "#/client/orpc";
 import { instantiateApp } from "#/apps/appsRegistry";
+import FliesHomeLogo from "#/components/FliesHomeLogo";
 
-export const Route = createFileRoute("/_loggedIn/$")({
+export const Route = createFileRoute("/$")({
   ssr: false,
   component: RouteComponent,
 });

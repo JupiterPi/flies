@@ -3,7 +3,7 @@ import { AppAssociation, type AppInstanceInfo } from "../apps";
 import { FullApp, type FullAppProps } from "../fullApps";
 import { AbhakenData, operations } from "./schema";
 import type z from "zod";
-import { DefaultAppLayout, PathBreadcrumbs } from "#/routes/_loggedIn/$";
+import { DefaultAppLayout, PathBreadcrumbs } from "#/routes/$";
 import { AbhakenUI } from "./ui";
 
 export const app = new AppAssociation(
