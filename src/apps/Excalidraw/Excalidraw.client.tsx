@@ -11,7 +11,8 @@ export default function ExcalidrawViewer({
   setData,
   path,
   SaveStatusIndicator,
-}: Pick<AppProps, "data" | "setData"> & {
+  readonly,
+}: Pick<AppProps, "data" | "setData" | "readonly"> & {
   path: string;
   SaveStatusIndicator: React.ReactNode;
 }) {
@@ -38,7 +39,9 @@ export default function ExcalidrawViewer({
             </div>
           )}
           theme={resolveTheme(theme)}
+          viewModeEnabled={readonly}
           onChange={(elements, appState, files) => {
+            if (readonly) return;
             const excalidrawSave = {
               type: "excalidraw",
               version: 2,

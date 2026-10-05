@@ -33,10 +33,12 @@ export function SchmierzettelUI() {
   const navigateToHome = () =>
     _navigate({ to: "." /* for looser type checking on search */ });
   const navigateToNewNote = () =>
+    // @ts-expect-error: search params are not validated here
     _navigate({ to: ".", search: { newNote: "" } });
   const navigateToNote = (noteId: string | null) =>
     _navigate({
       to: ".",
+      // @ts-expect-error: search params are not validated here
       search: { note: noteId ?? undefined },
     });
 
@@ -75,16 +77,18 @@ function SchmierzettelNotes({
   onOpenNote: (noteId: string) => void;
   onCreateNote: () => void;
 }) {
-  const { data } = useSchmierzettelData();
+  const { data, readonly } = useSchmierzettelData();
   return (
     <div className="typeset mt-4">
       <h1>Notes</h1>
       {data.notes.length === 0 && (
         <div className="text-muted-foreground italic">No notes yet.</div>
       )}
-      <div className="my-4">
-        <CreateNoteButton onClick={onCreateNote} />
-      </div>
+      {!readonly && (
+        <div className="my-4">
+          <CreateNoteButton onClick={onCreateNote} />
+        </div>
+      )}
       <div className="flex flex-wrap gap-4">
         <Masonry
           key={data.notes.length} // trigger re-render when notes change, see error that is otherwise thrown
@@ -169,7 +173,7 @@ function CaptureOrEditNoteDialog({
         <Button variant="outline" onClick={navigateToHome}>
           Cancel
         </Button>
-        {existingNote && (
+        {dispatchOperation && existingNote && (
           <Button
             variant="destructive"
             onClick={() => {
@@ -180,28 +184,30 @@ function CaptureOrEditNoteDialog({
             Delete
           </Button>
         )}
-        <Button
-          disabled={noteTextInput.trim() === ""}
-          onClick={async () => {
-            if (existingNote) {
-              dispatchOperation("updateNote", {
-                id: existingNote.id,
-                content: noteTextInput,
-                timestamp: Date.now(),
-                notifications,
-              });
-            } else {
-              dispatchOperation("addNote", {
-                content: noteTextInput,
-                timestamp: Date.now(),
-                notifications,
-              });
-            }
-            navigateToHome();
-          }}
-        >
-          Save
-        </Button>
+        {dispatchOperation && (
+          <Button
+            disabled={noteTextInput.trim() === ""}
+            onClick={async () => {
+              if (existingNote) {
+                dispatchOperation("updateNote", {
+                  id: existingNote.id,
+                  content: noteTextInput,
+                  timestamp: Date.now(),
+                  notifications,
+                });
+              } else {
+                dispatchOperation("addNote", {
+                  content: noteTextInput,
+                  timestamp: Date.now(),
+                  notifications,
+                });
+              }
+              navigateToHome();
+            }}
+          >
+            Save
+          </Button>
+        )}
       </CardFooter>
     </Card>
   );

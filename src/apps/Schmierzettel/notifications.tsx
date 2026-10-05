@@ -124,17 +124,19 @@ export function NtfyshConfigurer() {
       </ItemContent>
       <ItemActions>
         <Dialog>
-          <DialogTrigger
-            render={
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setNtfyshUrlInput(data.ntfyshUrl ?? "")}
-              >
-                Configure
-              </Button>
-            }
-          />
+          {dispatchOperation && (
+            <DialogTrigger
+              render={
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setNtfyshUrlInput(data.ntfyshUrl ?? "")}
+                >
+                  Configure
+                </Button>
+              }
+            />
+          )}
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Configure ntfy.sh</DialogTitle>
@@ -159,7 +161,7 @@ export function NtfyshConfigurer() {
             </Field>
             <DialogFooter>
               <DialogClose render={<Button variant="outline">Cancel</Button>} />
-              {data.ntfyshUrl !== null && (
+              {dispatchOperation && data.ntfyshUrl !== null && (
                 <DialogClose
                   render={
                     <Button
@@ -173,24 +175,26 @@ export function NtfyshConfigurer() {
                   }
                 />
               )}
-              <DialogClose
-                render={
-                  <Button
-                    type="submit"
-                    disabled={
-                      ntfyshUrlInput === data.ntfyshUrl ||
-                      ntfyshUrlInput.trim() === ""
-                    }
-                    onClick={() => {
-                      dispatchOperation("setNtfyshUrl", {
-                        ntfyshUrl: ntfyshUrlInput.trim(),
-                      });
-                    }}
-                  >
-                    Save
-                  </Button>
-                }
-              />
+              {dispatchOperation && (
+                <DialogClose
+                  render={
+                    <Button
+                      type="submit"
+                      disabled={
+                        ntfyshUrlInput === data.ntfyshUrl ||
+                        ntfyshUrlInput.trim() === ""
+                      }
+                      onClick={() => {
+                        dispatchOperation("setNtfyshUrl", {
+                          ntfyshUrl: ntfyshUrlInput.trim(),
+                        });
+                      }}
+                    >
+                      Save
+                    </Button>
+                  }
+                />
+              )}
             </DialogFooter>
           </DialogContent>
         </Dialog>

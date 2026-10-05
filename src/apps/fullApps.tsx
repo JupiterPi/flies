@@ -1,5 +1,5 @@
 import z from "zod";
-import { JsonApp } from "./jsonApps";
+import { JsonApp, type JsonAppProps } from "./jsonApps";
 import { dispatchOperation, type Operation } from "./operations";
 import type { AppInstanceInfo } from "./apps";
 import { useServer } from "#/client/orpc";
@@ -22,7 +22,7 @@ export abstract class FullApp<
     super(appDisplayName, instanceInfo, dataSchema, newFileData);
   }
 
-  override JsonAppComponent = () => {
+  override JsonAppComponent = ({ readonly }: JsonAppProps<schema>) => {
     const client = useServer().client;
 
     const [data, setData] = useState<z.infer<schema> | null>(null);
@@ -48,6 +48,7 @@ export abstract class FullApp<
       opName: opName,
       input: z.infer<operations[opName]["input"]>,
     ) => {
+      if (readonly) return;
       await client.fullApps.dispatchOperation({
         path: this.instanceInfo.path,
         operation: dispatchOperation(opName, input),
@@ -58,6 +59,7 @@ export abstract class FullApp<
       <this.FullAppComponent
         data={data}
         dispatchOperation={_dispatchOperation}
+        readonly={readonly}
       />
     );
   };
@@ -92,4 +94,5 @@ export type FullAppProps<
     opName: opName,
     input: z.infer<operations[opName]["input"]>,
   ) => Promise<void>;
+  readonly: boolean;
 };

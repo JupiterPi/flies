@@ -17,10 +17,12 @@ export abstract class JsonApp<schema extends z.ZodObject> extends App {
     data,
     setData,
     saveStatus,
+    readonly,
   }: {
     data: string;
     setData: (data: string | ((prev: string) => string)) => void;
     saveStatus: AppSaveStatus;
+    readonly: boolean;
   }) => {
     const jsonData = (() => {
       try {
@@ -56,6 +58,7 @@ export abstract class JsonApp<schema extends z.ZodObject> extends App {
           }
         }}
         saveStatus={saveStatus}
+        readonly={readonly}
       />
     );
   };
@@ -71,4 +74,5 @@ export type JsonAppProps<schema extends z.ZodObject> = {
     data: z.infer<schema> | ((prev: z.infer<schema>) => z.infer<schema>),
   ) => void;
   saveStatus: AppSaveStatus;
+  readonly: boolean;
 };

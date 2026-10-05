@@ -9,7 +9,7 @@ import { useServer } from "#/client/orpc";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useDebounce } from "@uidotdev/usehooks";
-import { IconCloudCheck, IconCloudUpload } from "@tabler/icons-react";
+import { IconCloudCheck, IconCloudUpload, IconLock } from "@tabler/icons-react";
 import { cn } from "#/utils";
 import { createServerOnlyFn } from "@tanstack/react-start";
 
@@ -17,7 +17,7 @@ export type AppInstanceInfo = {
   path: string;
 };
 
-export type AppSaveStatus = "idle" | "saving" | "saved";
+export type AppSaveStatus = "idle" | "saving" | "saved" | "readonly";
 
 export abstract class App {
   constructor(
@@ -25,7 +25,7 @@ export abstract class App {
     protected readonly newFileData: string,
   ) {}
 
-  WrapperComponent = () => {
+  WrapperComponent = ({ readonly }: { readonly: boolean }) => {
     const path = this.instanceInfo.path;
     const { fs } = useServer();
 
@@ -36,9 +36,15 @@ export abstract class App {
 
     const [contentInput, setContentInput] = useState<string | null>(null);
     const debouncedContentInput = useDebounce(contentInput, 1000);
-    const [saveStatus, setSaveStatus] = useState<AppSaveStatus>("idle");
+    const [saveStatus, setSaveStatus] = useState<AppSaveStatus>(
+      readonly ? "readonly" : "idle",
+    );
     useEffect(() => {
-      if (debouncedContentInput !== null && saveStatus !== "saving") {
+      if (
+        !readonly &&
+        debouncedContentInput !== null &&
+        saveStatus !== "saving"
+      ) {
         setSaveStatus("saving");
         fs.writeFile(path, debouncedContentInput).then(() => {
           setSaveStatus("saved");
@@ -59,7 +65,7 @@ export abstract class App {
     }
     const queriedContentStr = new TextDecoder().decode(queriedContent.data!);
     const content =
-      contentInput !== null
+      contentInput !== null && !readonly
         ? contentInput
         : queriedContentStr.trim().length > 0
           ? queriedContentStr
@@ -76,6 +82,7 @@ export abstract class App {
           }
         }}
         saveStatus={saveStatus}
+        readonly={readonly}
       />
     );
   };
@@ -89,8 +96,10 @@ export abstract class App {
           })}
         />
       );
-    } else {
+    } else if (saveStatus === "saving") {
       return <IconCloudUpload className="size-5 opacity-75" />;
+    } else if (saveStatus === "readonly") {
+      return <IconLock className="size-5 opacity-50" />;
     }
   }
 
@@ -108,6 +117,7 @@ export type AppProps = {
   data: string;
   setData: (data: string | ((prev: string) => string)) => void;
   saveStatus: AppSaveStatus;
+  readonly: boolean;
 };
 
 // associations

@@ -230,8 +230,8 @@ export interface RemoteFileSystem {
   getFileOrDirectoryInfo(
     path: string,
   ): Promise<
-    | { type: "file"; downloadLink: string }
-    | { type: "directory" }
+    | { type: "file"; downloadLink: string; readonly: boolean }
+    | { type: "directory"; readonly: boolean }
     | { type: "not_authenticated" | "not_found" }
   >;
 
@@ -267,10 +267,12 @@ export class ServerFS implements RemoteFileSystem {
       return {
         type: "file" as const,
         downloadLink: this.getFileDownloadLink(path),
+        readonly: info.readonly,
       };
     } else if (info.type === "directory") {
       return {
         type: "directory" as const,
+        readonly: info.readonly,
       };
     } else {
       return { type: info.type };

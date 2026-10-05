@@ -30,7 +30,7 @@ export function AbhakenUI() {
 }
 
 function TasksList() {
-  const { data } = useAbhakenData();
+  const { data, readonly } = useAbhakenData();
   const activeTasks = data.tasks
     .filter((task) => !task.closedAt)
     .sort((a, b) => computeUrgency(b) - computeUrgency(a)); // sort by urgency descending
@@ -50,17 +50,21 @@ function TasksList() {
             <div className="flex-1">
               <TaskCard task={task} />
             </div>
-            <div className="flex flex-col">
-              <TaskCompletionButton task={task} />
-            </div>
+            {!readonly && (
+              <div className="flex flex-col">
+                <TaskCompletionButton task={task} />
+              </div>
+            )}
           </div>
         ))}
         {activeTasks.length === 0 && (
           <div className="text-muted-foreground italic">No tasks yet.</div>
         )}
-        <div>
-          <CreateTask />
-        </div>
+        {!readonly && (
+          <div>
+            <CreateTask />
+          </div>
+        )}
       </div>
 
       {closedTasks.length > 0 && (
@@ -84,13 +88,15 @@ function CreateTask() {
   const [goal, setGoal] = useState<Goal | null>(null);
   const mayCreate = title.length > 0 && goal !== null;
 
-  const createTask = () => {
-    if (!mayCreate) return;
-    dispatchOperation("createTask", {
-      title,
-      goal,
+  const createTask =
+    dispatchOperation &&
+    (() => {
+      if (!mayCreate) return;
+      dispatchOperation("createTask", {
+        title,
+        goal,
+      });
     });
-  };
 
   return (
     <Dialog>
@@ -121,13 +127,15 @@ function CreateTask() {
 
         <DialogFooter>
           <DialogClose render={<Button variant="outline">Cancel</Button>} />
-          <DialogClose
-            render={
-              <Button disabled={!mayCreate} onClick={createTask}>
-                Save
-              </Button>
-            }
-          />
+          {createTask && (
+            <DialogClose
+              render={
+                <Button disabled={!mayCreate} onClick={createTask}>
+                  Save
+                </Button>
+              }
+            />
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -194,24 +202,26 @@ function TaskCompletionButton({ task }: { task: Task }) {
 
         <DialogFooter>
           <DialogClose render={<Button variant="outline">Cancel</Button>} />
-          <DialogClose
-            render={
-              <Button
-                onClick={() => {
-                  dispatchOperation("completeTask", {
-                    taskId: task.id,
-                    timestamp: Date.now(),
-                    note:
-                      noteInput.trim().length > 0
-                        ? noteInput.trim()
-                        : undefined,
-                  });
-                }}
-              >
-                Complete Task
-              </Button>
-            }
-          />
+          {dispatchOperation && (
+            <DialogClose
+              render={
+                <Button
+                  onClick={() => {
+                    dispatchOperation("completeTask", {
+                      taskId: task.id,
+                      timestamp: Date.now(),
+                      note:
+                        noteInput.trim().length > 0
+                          ? noteInput.trim()
+                          : undefined,
+                    });
+                  }}
+                >
+                  Complete Task
+                </Button>
+              }
+            />
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -264,7 +274,7 @@ function TaskDetailsDialog({
                     </>
                   )}
                 </div>
-                {!isClosed && (
+                {!isClosed && dispatchOperation && (
                   <Button
                     size="icon"
                     variant="ghost"
@@ -289,7 +299,7 @@ function TaskDetailsDialog({
         </div>
 
         <DialogFooter>
-          {!isClosed && (
+          {!isClosed && dispatchOperation && (
             <DialogClose
               render={
                 <Button

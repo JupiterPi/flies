@@ -49,11 +49,19 @@ class SchmierzettelApp extends FullApp<
   override FullAppComponent = ({
     data,
     dispatchOperation,
+    readonly,
   }: FullAppProps<typeof SchmierzettelData, typeof operations>) => {
     return (
-      <SchmierzettelDataContext value={{ data, dispatchOperation }}>
+      <SchmierzettelDataContext
+        value={{
+          data,
+          dispatchOperation: readonly ? null : dispatchOperation,
+          readonly,
+        }}
+      >
         <DefaultAppLayout
           PathBreadcrumbs={<PathBreadcrumbs path={this.instanceInfo.path} />}
+          SaveStatusIndicator={readonly && this.SaveStatusIndicator("readonly")}
         >
           <SchmierzettelUI />
         </DefaultAppLayout>
@@ -64,10 +72,13 @@ class SchmierzettelApp extends FullApp<
 
 export const SchmierzettelDataContext = createContext<{
   data: z.infer<typeof SchmierzettelData>;
-  dispatchOperation: FullAppProps<
-    typeof SchmierzettelData,
-    typeof operations
-  >["dispatchOperation"];
+  dispatchOperation:
+    | null
+    | FullAppProps<
+        typeof SchmierzettelData,
+        typeof operations
+      >["dispatchOperation"];
+  readonly: boolean;
 } | null>(null);
 
 export function useSchmierzettelData() {

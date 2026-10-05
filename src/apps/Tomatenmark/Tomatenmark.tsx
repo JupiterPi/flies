@@ -21,14 +21,23 @@ class TomatenmarkApp extends App {
     super(instanceInfo, "");
   }
 
-  override AppComponent = ({ data, setData, saveStatus }: AppProps) => {
+  override AppComponent = ({
+    data,
+    setData,
+    saveStatus,
+    readonly,
+  }: AppProps) => {
     return (
       <div>
         <DefaultAppLayout
           PathBreadcrumbs={<PathBreadcrumbs path={this.instanceInfo.path} />}
           SaveStatusIndicator={this.SaveStatusIndicator(saveStatus)}
         >
-          <TomatenmarkEditor initialMarkdown={data} onChange={setData} />
+          <TomatenmarkEditor
+            initialMarkdown={data}
+            readonly={readonly}
+            onChange={setData}
+          />
         </DefaultAppLayout>
       </div>
     );
@@ -37,9 +46,11 @@ class TomatenmarkApp extends App {
 
 function TomatenmarkEditor({
   initialMarkdown,
+  readonly,
   onChange,
 }: {
   initialMarkdown: string;
+  readonly?: boolean;
   onChange: (markdown: string) => void;
 }) {
   const [markdown, setMarkdown] = useState(initialMarkdown);
@@ -51,6 +62,8 @@ function TomatenmarkEditor({
     <>
       <CodeMirror
         value={markdown}
+        readOnly={readonly}
+        editable={!readonly}
         extensions={[
           markdownEditor(),
           EditorView.lineWrapping,

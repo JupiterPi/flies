@@ -309,6 +309,7 @@ const renderTaskLists = ViewPlugin.define(() => ({}), {
   eventHandlers: {
     mousedown: (event, view) => {
       const target = event.target as HTMLElement;
+      if (view.state.readOnly) return;
       if (
         target.nodeName === "INPUT" &&
         target.classList.contains("cm-tomatenmark-task-list-checkbox")

@@ -20,7 +20,7 @@ export const fsRoutes = os.meta(openapi({ prefix: "/fs" })).router({
         input,
       }): Promise<
         | { type: "not_authenticated" | "not_found" }
-        | { type: "directory" | "file"; mayWrite: boolean }
+        | { type: "directory" | "file"; readonly: boolean }
       > => {
         const permitted = permissions
           .read(input.path)
@@ -35,8 +35,8 @@ export const fsRoutes = os.meta(openapi({ prefix: "/fs" })).router({
         if (await fs.exists(path)) {
           const stat = await fs.stat(path);
           return stat.isDirectory()
-            ? { type: "directory", mayWrite }
-            : { type: "file", mayWrite };
+            ? { type: "directory", readonly: !mayWrite }
+            : { type: "file", readonly: !mayWrite };
         } else {
           return { type: "not_found" };
         }

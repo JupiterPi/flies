@@ -18,11 +18,12 @@ class ExcalidrawApp extends App {
   }
 
   override AppComponent = createClientOnlyFn(
-    ({ data, setData, saveStatus }: AppProps) => {
+    ({ data, setData, saveStatus, readonly }: AppProps) => {
       return (
         <ExcalidrawViewer
           data={data}
           setData={setData}
+          readonly={readonly}
           path={this.instanceInfo.path}
           SaveStatusIndicator={this.SaveStatusIndicator(saveStatus)}
         />

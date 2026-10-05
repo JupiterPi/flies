@@ -60,8 +60,6 @@ function RouteComponent() {
     );
   }
 
-  // todo: handle readonly shares
-
   if (remoteItem.data.type === "file") {
     const downloadLink = remoteItem.data.downloadLink;
 
@@ -69,7 +67,7 @@ function RouteComponent() {
     const app = instantiateApp({ path });
     if (app) {
       client.apps.discoverAppFile({ filePath: path }); // ignore result
-      return <app.WrapperComponent />;
+      return <app.WrapperComponent readonly={remoteItem.data.readonly} />;
     }
 
     // if no app is found, open the raw file

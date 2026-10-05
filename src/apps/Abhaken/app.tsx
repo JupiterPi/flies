@@ -27,11 +27,19 @@ class AbhakenApp extends FullApp<typeof AbhakenData, typeof operations> {
   override FullAppComponent = ({
     data,
     dispatchOperation,
+    readonly,
   }: FullAppProps<typeof AbhakenData, typeof operations>) => {
     return (
-      <AbhakenDataContext value={{ data, dispatchOperation }}>
+      <AbhakenDataContext
+        value={{
+          data,
+          dispatchOperation: readonly ? null : dispatchOperation,
+          readonly,
+        }}
+      >
         <DefaultAppLayout
           PathBreadcrumbs={<PathBreadcrumbs path={this.instanceInfo.path} />}
+          SaveStatusIndicator={readonly && this.SaveStatusIndicator("readonly")}
         >
           <AbhakenUI />
         </DefaultAppLayout>
@@ -42,10 +50,10 @@ class AbhakenApp extends FullApp<typeof AbhakenData, typeof operations> {
 
 export const AbhakenDataContext = createContext<{
   data: z.infer<typeof AbhakenData>;
-  dispatchOperation: FullAppProps<
-    typeof AbhakenData,
-    typeof operations
-  >["dispatchOperation"];
+  dispatchOperation:
+    | null
+    | FullAppProps<typeof AbhakenData, typeof operations>["dispatchOperation"];
+  readonly: boolean;
 } | null>(null);
 
 export function useAbhakenData() {
