@@ -13,7 +13,7 @@ import { ClientConfigProvider, useClientConfig } from "#/client/clientConfig";
 import { ORPCClientProvider } from "#/client/orpc";
 import z from "zod";
 import { zodValidator } from "@tanstack/zod-adapter";
-import { useEffect } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 
 const ShareTokenSearchSchema = z.object({
   share: z.string().optional(),
@@ -50,19 +50,38 @@ function RootShell({ children }: { children: React.ReactNode }) {
 const queryClient = new QueryClient();
 
 function RootComponent() {
+  const [otherToaster, setOtherToaster] = useState(false);
   return (
     <QueryClientProvider client={queryClient}>
       <ClientConfigProvider>
         <ORPCClientProvider>
           <DetectShareTokenQueryParam />
           <ThemeProvider>
-            <Outlet />
-            <Toaster />
+            <OtherToasterContext value={{ setOtherToaster }}>
+              <Outlet />
+              {!otherToaster && <Toaster />}
+            </OtherToasterContext>
           </ThemeProvider>
         </ORPCClientProvider>
       </ClientConfigProvider>
     </QueryClientProvider>
   );
+}
+
+const OtherToasterContext = createContext<{
+  setOtherToaster: (value: boolean) => void;
+} | null>(null);
+export function useOtherToaster(otherToaster: boolean) {
+  const context = useContext(OtherToasterContext);
+  if (!context) {
+    throw new Error(
+      "useOtherToaster must be used within a OtherToasterProvider",
+    );
+  }
+  useEffect(() => {
+    context.setOtherToaster(otherToaster);
+    return () => context.setOtherToaster(false);
+  }, [context, otherToaster]);
 }
 
 function DetectShareTokenQueryParam() {
