@@ -3,7 +3,7 @@ import { AppAssociation, type AppInstanceInfo } from "../apps";
 import { FullApp, type FullAppProps } from "../fullApps";
 import { AbhakenData, operations } from "./schema";
 import type z from "zod";
-import { DefaultAppLayout, PathBreadcrumbs } from "#/routes/$";
+import { DefaultAppLayout } from "#/routes/$";
 import { AbhakenUI } from "./ui";
 
 export const app = new AppAssociation(
@@ -27,6 +27,7 @@ class AbhakenApp extends FullApp<typeof AbhakenData, typeof operations> {
   override FullAppComponent = ({
     data,
     dispatchOperation,
+    PathBreadcrumbs,
     readonly,
   }: FullAppProps<typeof AbhakenData, typeof operations>) => {
     return (
@@ -38,7 +39,7 @@ class AbhakenApp extends FullApp<typeof AbhakenData, typeof operations> {
         }}
       >
         <DefaultAppLayout
-          PathBreadcrumbs={<PathBreadcrumbs path={this.instanceInfo.path} />}
+          PathBreadcrumbs={PathBreadcrumbs}
           SaveStatusIndicator={readonly && this.SaveStatusIndicator("readonly")}
         >
           <AbhakenUI />

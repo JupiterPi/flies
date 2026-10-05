@@ -22,7 +22,10 @@ export abstract class FullApp<
     super(appDisplayName, instanceInfo, dataSchema, newFileData);
   }
 
-  override JsonAppComponent = ({ readonly }: JsonAppProps<schema>) => {
+  override JsonAppComponent = ({
+    PathBreadcrumbs,
+    readonly,
+  }: JsonAppProps<schema>) => {
     const client = useServer().client;
 
     const [data, setData] = useState<z.infer<schema> | null>(null);
@@ -59,6 +62,7 @@ export abstract class FullApp<
       <this.FullAppComponent
         data={data}
         dispatchOperation={_dispatchOperation}
+        PathBreadcrumbs={PathBreadcrumbs}
         readonly={readonly}
       />
     );
@@ -94,5 +98,6 @@ export type FullAppProps<
     opName: opName,
     input: z.infer<operations[opName]["input"]>,
   ) => Promise<void>;
+  PathBreadcrumbs: React.ReactNode;
   readonly: boolean;
 };

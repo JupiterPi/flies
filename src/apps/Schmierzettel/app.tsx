@@ -1,6 +1,6 @@
 import { createContext, useContext } from "react";
 import { SchmierzettelUI } from "./ui";
-import { DefaultAppLayout, PathBreadcrumbs } from "#/routes/$";
+import { DefaultAppLayout } from "#/routes/$";
 import { operations, SchmierzettelData } from "./schema";
 import { FullApp, type FullAppProps } from "../fullApps";
 import { AppAssociation, type AppInstanceInfo } from "../apps";
@@ -49,6 +49,7 @@ class SchmierzettelApp extends FullApp<
   override FullAppComponent = ({
     data,
     dispatchOperation,
+    PathBreadcrumbs,
     readonly,
   }: FullAppProps<typeof SchmierzettelData, typeof operations>) => {
     return (
@@ -60,7 +61,7 @@ class SchmierzettelApp extends FullApp<
         }}
       >
         <DefaultAppLayout
-          PathBreadcrumbs={<PathBreadcrumbs path={this.instanceInfo.path} />}
+          PathBreadcrumbs={PathBreadcrumbs}
           SaveStatusIndicator={readonly && this.SaveStatusIndicator("readonly")}
         >
           <SchmierzettelUI />

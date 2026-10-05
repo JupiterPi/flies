@@ -1,18 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import DirectoryViewer from "./-DirectoryViewer";
 import { IconLoader } from "@tabler/icons-react";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbSeparator,
-} from "#/components/ui/breadcrumb";
 import React from "react";
-import { LoginPage, useAuthInvalidationKey, useServer } from "#/client/orpc";
+import {
+  LoginPage,
+  useAuthInvalidationKey,
+  useIsLoggedInAsUser,
+  useServer,
+} from "#/client/orpc";
 import { instantiateApp } from "#/apps/appsRegistry";
-import FliesHomeLogo from "#/components/FliesHomeLogo";
+import PathBreadcrumbs from "./-PathBreadcrumbs";
 
 export const Route = createFileRoute("/$")({
   ssr: false,
@@ -20,6 +18,7 @@ export const Route = createFileRoute("/$")({
 });
 
 function RouteComponent() {
+  const isLoggedInAsUser = useIsLoggedInAsUser();
   const { client, fs } = useServer();
   const path = Route.useParams()._splat!;
 
@@ -60,6 +59,15 @@ function RouteComponent() {
     );
   }
 
+  const _PathBreadcrumbs = (
+    <PathBreadcrumbs
+      path={path}
+      mayShare={
+        isLoggedInAsUser // todo: theoretically check specific permission
+      }
+    />
+  );
+
   if (remoteItem.data.type === "file") {
     const downloadLink = remoteItem.data.downloadLink;
 
@@ -67,13 +75,18 @@ function RouteComponent() {
     const app = instantiateApp({ path });
     if (app) {
       client.apps.discoverAppFile({ filePath: path }); // ignore result
-      return <app.WrapperComponent readonly={remoteItem.data.readonly} />;
+      return (
+        <app.WrapperComponent
+          PathBreadcrumbs={_PathBreadcrumbs}
+          readonly={remoteItem.data.readonly}
+        />
+      );
     }
 
     // if no app is found, open the raw file
     window.open(downloadLink, "_blank");
   } else {
-    return <DirectoryViewer path={path} />;
+    return <DirectoryViewer PathBreadcrumbs={_PathBreadcrumbs} path={path} />;
   }
 }
 
@@ -91,42 +104,9 @@ export function ErrorPage({ children }: { children: React.ReactNode }) {
 
 export function LoadingPage() {
   return (
-    <div className="flex mt-10 w-full items-center justify-center">
+    <div className="flex my-10 w-full items-center justify-center">
       <IconLoader className="mr-2 h-6 w-6 animate-spin animate-3s" />
     </div>
-  );
-}
-
-export function PathBreadcrumbs({ path }: { path: string }) {
-  const pathSegments = path.split("/").filter((segment) => segment !== "");
-  return (
-    <Breadcrumb>
-      <BreadcrumbList>
-        <BreadcrumbItem>
-          <FliesHomeLogo className="size-5" />
-        </BreadcrumbItem>
-        {pathSegments.map((segment, index) => (
-          <React.Fragment key={index}>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbLink
-                render={
-                  <Link
-                    to="/$"
-                    params={{
-                      _splat: pathSegments.slice(0, index + 1).join("/"),
-                    }}
-                    className="text-base"
-                  >
-                    {segment}
-                  </Link>
-                }
-              />
-            </BreadcrumbItem>
-          </React.Fragment>
-        ))}
-      </BreadcrumbList>
-    </Breadcrumb>
   );
 }
 

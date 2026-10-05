@@ -1,4 +1,4 @@
-import { DefaultAppLayout, PathBreadcrumbs } from "#/routes/$";
+import { DefaultAppLayout } from "#/routes/$";
 import {
   App,
   AppAssociation,
@@ -16,11 +16,9 @@ class TextViewerApp extends App {
     super(instanceInfo, "");
   }
 
-  override AppComponent = ({ data }: AppProps) => {
+  override AppComponent = ({ data, PathBreadcrumbs }: AppProps) => {
     return (
-      <DefaultAppLayout
-        PathBreadcrumbs={<PathBreadcrumbs path={this.instanceInfo.path} />}
-      >
+      <DefaultAppLayout PathBreadcrumbs={PathBreadcrumbs}>
         <pre className="whitespace-pre-wrap break-words">{data}</pre>
       </DefaultAppLayout>
     );

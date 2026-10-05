@@ -4,7 +4,7 @@ import {
   type AppInstanceInfo,
   type AppProps,
 } from "../apps";
-import { DefaultAppLayout, PathBreadcrumbs } from "#/routes/$";
+import { DefaultAppLayout } from "#/routes/$";
 import { useEffect, useState } from "react";
 import CodeMirror, { EditorView } from "@uiw/react-codemirror";
 import { aura } from "./theme";
@@ -25,12 +25,13 @@ class TomatenmarkApp extends App {
     data,
     setData,
     saveStatus,
+    PathBreadcrumbs,
     readonly,
   }: AppProps) => {
     return (
       <div>
         <DefaultAppLayout
-          PathBreadcrumbs={<PathBreadcrumbs path={this.instanceInfo.path} />}
+          PathBreadcrumbs={PathBreadcrumbs}
           SaveStatusIndicator={this.SaveStatusIndicator(saveStatus)}
         >
           <TomatenmarkEditor

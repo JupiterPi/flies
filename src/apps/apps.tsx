@@ -25,7 +25,13 @@ export abstract class App {
     protected readonly newFileData: string,
   ) {}
 
-  WrapperComponent = ({ readonly }: { readonly: boolean }) => {
+  WrapperComponent = ({
+    PathBreadcrumbs,
+    readonly,
+  }: {
+    PathBreadcrumbs: React.ReactNode;
+    readonly: boolean;
+  }) => {
     const path = this.instanceInfo.path;
     const { fs } = useServer();
 
@@ -82,6 +88,7 @@ export abstract class App {
           }
         }}
         saveStatus={saveStatus}
+        PathBreadcrumbs={PathBreadcrumbs}
         readonly={readonly}
       />
     );
@@ -117,6 +124,7 @@ export type AppProps = {
   data: string;
   setData: (data: string | ((prev: string) => string)) => void;
   saveStatus: AppSaveStatus;
+  PathBreadcrumbs: React.ReactNode;
   readonly: boolean;
 };
 

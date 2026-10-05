@@ -21,7 +21,7 @@ import {
 } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { DefaultAppLayout, LoadingPage, PathBreadcrumbs } from "./$";
+import { DefaultAppLayout, LoadingPage } from "./$";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -56,7 +56,13 @@ import { useServer } from "#/client/orpc";
 import { instantiateApp } from "#/apps/appsRegistry";
 import { joinPath, pathFilename, pathParent } from "#/utils";
 
-export default function DirectoryViewer({ path }: { path: string }) {
+export default function DirectoryViewer({
+  PathBreadcrumbs,
+  path,
+}: {
+  PathBreadcrumbs: React.ReactNode;
+  path: string;
+}) {
   const { fs } = useServer();
 
   const children = useQuery({
@@ -96,7 +102,7 @@ export default function DirectoryViewer({ path }: { path: string }) {
   });
 
   return (
-    <DefaultAppLayout PathBreadcrumbs={<PathBreadcrumbs path={path} />}>
+    <DefaultAppLayout PathBreadcrumbs={PathBreadcrumbs}>
       <div className="flex flex-wrap gap-2 mt-2">
         {childElements.map((child) => (
           <FileOrDirectoryItem

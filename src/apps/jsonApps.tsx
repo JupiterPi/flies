@@ -1,6 +1,6 @@
 import z from "zod";
 import { ErrorPage } from "#/routes/$";
-import type { AppInstanceInfo, AppSaveStatus } from "./apps";
+import type { AppInstanceInfo, AppProps, AppSaveStatus } from "./apps";
 import { App } from "./apps";
 
 export abstract class JsonApp<schema extends z.ZodObject> extends App {
@@ -17,13 +17,9 @@ export abstract class JsonApp<schema extends z.ZodObject> extends App {
     data,
     setData,
     saveStatus,
+    PathBreadcrumbs,
     readonly,
-  }: {
-    data: string;
-    setData: (data: string | ((prev: string) => string)) => void;
-    saveStatus: AppSaveStatus;
-    readonly: boolean;
-  }) => {
+  }: AppProps) => {
     const jsonData = (() => {
       try {
         return JSON.parse(data);
@@ -58,6 +54,7 @@ export abstract class JsonApp<schema extends z.ZodObject> extends App {
           }
         }}
         saveStatus={saveStatus}
+        PathBreadcrumbs={PathBreadcrumbs}
         readonly={readonly}
       />
     );
@@ -74,5 +71,6 @@ export type JsonAppProps<schema extends z.ZodObject> = {
     data: z.infer<schema> | ((prev: z.infer<schema>) => z.infer<schema>),
   ) => void;
   saveStatus: AppSaveStatus;
+  PathBreadcrumbs: React.ReactNode;
   readonly: boolean;
 };
