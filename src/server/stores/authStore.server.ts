@@ -18,6 +18,7 @@ export const User = z.object({
 export type User = z.infer<typeof User>;
 
 export const Share = z.object({
+  id: z.string().default(() => crypto.randomUUID()),
   ownerId: z.string(),
   path: z.string(), // todo: gitignore-style path matching
   note: z.string().optional(),
@@ -134,6 +135,16 @@ export function createShare(share: z.input<typeof Share>) {
     }),
   );
   return shareWithToken(newShare);
+}
+
+export function deleteShare(shareId: string) {
+  authStore.write(
+    produce((authStore) => {
+      const index = authStore.shares.findIndex((s) => s.id === shareId);
+      if (index === -1) throw new Error("Share not found");
+      authStore.shares.splice(index, 1);
+    }),
+  );
 }
 
 export function setDashboard(userId: string, dashboard: Dashboard) {
