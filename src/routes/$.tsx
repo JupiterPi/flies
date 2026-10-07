@@ -9,8 +9,8 @@ import {
   useIsLoggedInAsUser,
   useServer,
 } from "#/client/orpc";
-import { instantiateApp } from "#/apps/appsRegistry";
 import PathBreadcrumbs from "./-PathBreadcrumbs";
+import { runOrGetApp } from "#/apps/runningAppsManager.client";
 
 export const Route = createFileRoute("/$")({
   ssr: false,
@@ -77,7 +77,7 @@ function RouteComponent() {
     const downloadLink = remoteItem.data.downloadLink;
 
     // resolve associated app
-    const app = instantiateApp({ path });
+    const app = runOrGetApp(path);
     if (app) {
       client.apps.discoverAppFile({ filePath: path }); // ignore result
       return (

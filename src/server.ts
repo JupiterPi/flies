@@ -1,7 +1,7 @@
 import handler, { createServerEntry } from "@tanstack/react-start/server-entry";
 import * as fs from "node:fs";
 import { authFromRequest } from "./server/auth.server";
-import { runSavedApps } from "./apps/runningAppsManager";
+import { runSavedApps } from "./apps/runningAppsManager.server";
 import { instantiateApp } from "./apps/appsRegistry";
 import { env } from "./env";
 import { permissions } from "./server/permissions";

@@ -2,7 +2,7 @@ import { os } from "@orpc/server";
 import { fsRoutes } from "./fs.server";
 import { sharesRoutes } from "./shares.server";
 import { fullAppRoutes } from "#/apps/fullApps.server";
-import { appsRoutes } from "#/apps/runningAppsManager";
+import { appsRoutes } from "#/apps/runningAppsManager.server";
 import { userRoutes } from "../auth.server";
 
 export const router = {
