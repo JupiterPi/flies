@@ -5,7 +5,7 @@ import { IconPlus } from "@tabler/icons-react";
 import { useState } from "react";
 import { Masonry } from "masonic";
 import { useSchmierzettelData } from "./app";
-import { Note, Notification } from "./schema";
+import { ArchivedNote, Note, Notification } from "./schema";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import z from "zod";
 import {
@@ -104,6 +104,23 @@ function SchmierzettelNotes({
           )}
         ></Masonry>
       </div>
+
+      <h1 className="text-muted-foreground">Archived Notes</h1>
+      {data.archivedNotes.length === 0 && (
+        <div className="text-muted-foreground italic">
+          No archived notes yet.
+        </div>
+      )}
+      <div className="flex flex-wrap gap-4">
+        <Masonry
+          key={data.archivedNotes.length} // trigger re-render when notes change, see error that is otherwise thrown
+          items={data.archivedNotes}
+          columnGutter={16}
+          columnWidth={300}
+          overscanBy={5}
+          render={(data) => <ArchivedNoteCard note={data.data} />}
+        ></Masonry>
+      </div>
     </div>
   );
 }
@@ -125,6 +142,19 @@ function NoteCard({ note, onOpen }: { note: Note; onOpen: () => void }) {
         {note.notifications.length > 0 && (
           <NotificationBadges notifications={note.notifications} />
         )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function ArchivedNoteCard({ note }: { note: ArchivedNote }) {
+  return (
+    <Card size="sm" className="w-full h-fit">
+      <CardContent className="flex-1 overflow-y-auto flex flex-col gap-2">
+        <div className="whitespace-pre-line text-muted-foreground">
+          {note.content}
+          {/* archived notes can be assumed to be non-empty */}
+        </div>
       </CardContent>
     </Card>
   );
@@ -177,11 +207,14 @@ function CaptureOrEditNoteDialog({
           <Button
             variant="destructive"
             onClick={() => {
-              dispatchOperation("deleteNote", { id: existingNote.id });
+              dispatchOperation("archiveNote", {
+                id: existingNote.id,
+                timestamp: Date.now(),
+              });
               navigateToHome();
             }}
           >
-            Delete
+            Archive
           </Button>
         )}
         {dispatchOperation && (

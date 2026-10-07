@@ -19,7 +19,7 @@ export const Note = z.object({
 export type Note = z.infer<typeof Note>;
 
 export const ArchivedNote = z.object({
-  id: z.string().default(() => crypto.randomUUID()),
+  id: z.string(),
   archivedAt: z.number(),
   content: z.string(),
 });
@@ -77,6 +77,21 @@ export const operations = createOperations<SchmierzettelData>()({
         if (input.notifications) {
           note.notifications = input.notifications;
         }
+      }),
+  }),
+  archiveNote: operation({
+    input: z.object({ id: z.string(), timestamp: z.number() }),
+    handler: (data, input) =>
+      produce(data, (data) => {
+        const note = data.notes.find((n) => n.id === input.id);
+        if (!note) return;
+        data.notes = data.notes.filter((n) => n.id !== input.id);
+        if (note.content.trim().length === 0) return;
+        data.archivedNotes.push({
+          id: note.id,
+          archivedAt: input.timestamp,
+          content: note.content,
+        });
       }),
   }),
   deleteNote: operation({
