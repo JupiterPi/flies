@@ -6,6 +6,9 @@ const _env = createEnv({
     SERVER_URL: z.string().default("http://localhost:3000"),
     DATA_DIR: z.string().default("./flies-data"),
     RATE_LIMITING_HEADER: z.string().default("cf-connecting-ip"),
+    SELF_UPDATE_COMMAND: z
+      .string()
+      .default("echo No self-update command configured"),
   },
 
   /**
@@ -47,4 +50,5 @@ export const env = {
     fs: `${_env.DATA_DIR}/fs`,
   },
   rateLimitingHeader: _env.RATE_LIMITING_HEADER,
+  selfUpdateCommand: _env.SELF_UPDATE_COMMAND,
 };

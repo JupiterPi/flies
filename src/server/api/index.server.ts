@@ -4,6 +4,7 @@ import { sharesRoutes } from "./shares.server";
 import { fullAppRoutes } from "#/apps/fullApps.server";
 import { appsRoutes } from "#/apps/runningAppsManager.server";
 import { userRoutes } from "../auth.server";
+import { adminRoutes } from "./admin.server";
 
 export const router = {
   hello: os.route({ method: "GET", path: "/hello" }).handler(async () => {
@@ -14,5 +15,6 @@ export const router = {
   shares: sharesRoutes,
   apps: appsRoutes,
   fullApps: fullAppRoutes,
+  admin: adminRoutes,
 };
 export type router = typeof router;

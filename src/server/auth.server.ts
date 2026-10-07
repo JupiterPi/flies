@@ -211,6 +211,12 @@ export const userRoutes = os.meta(openapi({ prefix: "/user" })).router({
       });
       return sessionId;
     }),
+  getPrivileges: os
+    .route({ method: "GET", path: "/privileges" })
+    .use(auth())
+    .handler(({ context }) => {
+      return context.privileges;
+    }),
   getDashboard: os
     .route({ method: "GET", path: "/dashboard" })
     .use(auth())

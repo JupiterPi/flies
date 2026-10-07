@@ -22,11 +22,16 @@ import { Textarea } from "#/components/ui/textarea";
 import { useEffect, useState } from "react";
 import FliesHomeLogo from "#/components/FliesHomeLogo";
 import LandingPage from "./-landing-page";
+import { Separator } from "#/components/ui/separator";
 
 export const Route = createFileRoute("/")({ component: Home });
 
 function Home() {
-  const { queries } = useServer();
+  const { client, queries } = useServer();
+
+  const { data: privileges } = useQuery(
+    queries.user.getPrivileges.queryOptions(),
+  );
 
   const { data: userDashboard, error } = useQuery(
     queries.user.getDashboard.queryOptions(),
@@ -174,6 +179,16 @@ function Home() {
                 }
               />
             </DialogFooter>
+
+            {privileges?.admin && (
+              <>
+                <Separator />
+                <DialogTitle>Admin Panel</DialogTitle>
+                <Button onClick={() => client.admin.selfUpdate()}>
+                  Self-Update Flies
+                </Button>
+              </>
+            )}
           </DialogContent>
         </Dialog>
       </div>
