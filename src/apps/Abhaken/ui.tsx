@@ -258,7 +258,7 @@ function TaskDetailsDialog({
         <div>
           <h3 className="m-0!">Completions</h3>
           <ScrollArea className="h-40">
-            {task.completions.map((completion) => (
+            {task.completions.toReversed().map((completion) => (
               <div
                 key={completion.completedAt}
                 className="text-sm bg-muted rounded-lg py-2 px-3 flex justify-between items-center mb-2"
