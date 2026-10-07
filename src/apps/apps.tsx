@@ -4,20 +4,26 @@
 
 // base App
 
-import { LoadingPage } from "#/routes/$";
+import { ErrorPage, LoadingPage } from "#/routes/$";
 import { useServer } from "#/client/orpc";
-import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useDebounce } from "@uidotdev/usehooks";
-import { IconCloudCheck, IconCloudUpload, IconLock } from "@tabler/icons-react";
+import {
+  IconCloudCheck,
+  IconCloudUp,
+  IconCloudUpload,
+  IconLock,
+} from "@tabler/icons-react";
 import { cn } from "#/utils";
 import { createServerOnlyFn } from "@tanstack/react-start";
+import { useBlocker } from "@tanstack/react-router";
 
 export type AppInstanceInfo = {
   path: string;
 };
 
-export type AppSaveStatus = "idle" | "saving" | "saved" | "readonly";
+export type AppSaveStatus =
+  "idle" | "savingSoon" | "saving" | "saved" | "readonly";
 
 export abstract class App {
   constructor(
@@ -35,16 +41,33 @@ export abstract class App {
     const path = this.instanceInfo.path;
     const { fs } = useServer();
 
-    const queriedContent = useQuery({
-      queryKey: ["file-content", path],
-      queryFn: () => fs.readFile(path),
-    });
+    const [queriedContent, setQueriedContent] = useState<
+      string | { error: string } | null
+    >(null);
+    useEffect(() => {
+      let cancelled = false;
+      fs.readFile(path)
+        .then((content) => {
+          if (!cancelled) setQueriedContent(new TextDecoder().decode(content));
+        })
+        .catch((error) => {
+          if (!cancelled) setQueriedContent({ error: String(error) });
+        });
+      return () => {
+        cancelled = true;
+      };
+    }, [path]);
 
     const [contentInput, setContentInput] = useState<string | null>(null);
     const debouncedContentInput = useDebounce(contentInput, 1000);
     const [saveStatus, setSaveStatus] = useState<AppSaveStatus>(
       readonly ? "readonly" : "idle",
     );
+    useEffect(() => {
+      if (!readonly && contentInput !== null && saveStatus !== "saving") {
+        setSaveStatus("savingSoon");
+      }
+    }, [contentInput]);
     useEffect(() => {
       if (
         !readonly &&
@@ -66,15 +89,26 @@ export abstract class App {
       }
     }, [saveStatus]);
 
-    if (queriedContent.isLoading) {
+    // prevent accidental navigation away when there are unsaved changes
+    const isUnsavedChanges =
+      saveStatus === "savingSoon" || saveStatus === "saving";
+    useBlocker({
+      shouldBlockFn: () => isUnsavedChanges,
+      enableBeforeUnload: isUnsavedChanges,
+    });
+
+    if (queriedContent === null) {
       return <LoadingPage />;
     }
-    const queriedContentStr = new TextDecoder().decode(queriedContent.data!);
+    if (queriedContent && typeof queriedContent === "object") {
+      return <ErrorPage>Error reading file: {queriedContent.error}</ErrorPage>;
+    }
+
     const content =
       contentInput !== null && !readonly
         ? contentInput
-        : queriedContentStr.trim().length > 0
-          ? queriedContentStr
+        : queriedContent.trim().length > 0
+          ? queriedContent
           : this.newFileData;
 
     return (
@@ -103,6 +137,8 @@ export abstract class App {
           })}
         />
       );
+    } else if (saveStatus === "savingSoon") {
+      return <IconCloudUp className="size-5 opacity-50" />;
     } else if (saveStatus === "saving") {
       return <IconCloudUpload className="size-5 opacity-75" />;
     } else if (saveStatus === "readonly") {

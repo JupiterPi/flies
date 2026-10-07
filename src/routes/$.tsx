@@ -11,10 +11,11 @@ import {
 } from "#/client/orpc";
 import PathBreadcrumbs from "./-PathBreadcrumbs";
 import { runOrGetApp } from "#/apps/runningAppsManager.client";
+import { createClientOnlyFn } from "@tanstack/react-start";
 
 export const Route = createFileRoute("/$")({
   ssr: false,
-  component: RouteComponent,
+  component: createClientOnlyFn(RouteComponent),
 });
 
 function RouteComponent() {
