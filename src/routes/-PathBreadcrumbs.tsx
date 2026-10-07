@@ -42,12 +42,15 @@ import { Switch } from "#/components/ui/switch";
 export default function PathBreadcrumbs({
   path,
   mayShare,
+  isSharesDialogOpen,
+  onSharesDialogOpenChange,
 }: {
   path: string;
   mayShare: boolean;
+  isSharesDialogOpen: boolean;
+  onSharesDialogOpenChange: (open: boolean) => void;
 }) {
   const pathSegments = path.split("/").filter((segment) => segment !== "");
-  const [isSharesDialogOpen, setIsSharesDialogOpen] = useState(false);
   return (
     <>
       <Breadcrumb>
@@ -84,8 +87,12 @@ export default function PathBreadcrumbs({
               }
             />
             <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => setIsSharingDialogOpen(true)}>
-                <IconShare />
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.preventDefault();
+                  onSharesDialogOpenChange(true);
+                }}
+              >
                 Share
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -95,7 +102,7 @@ export default function PathBreadcrumbs({
               variant="ghost"
               size="xs"
               className="rounded-full"
-              onClick={() => setIsSharesDialogOpen(true)}
+              onClick={() => onSharesDialogOpenChange(true)}
             >
               <IconDots />
             </Button>
@@ -105,7 +112,7 @@ export default function PathBreadcrumbs({
       {mayShare && (
         <SharesDialog
           isOpen={isSharesDialogOpen}
-          onClose={() => setIsSharesDialogOpen(false)}
+          onClose={() => onSharesDialogOpenChange(false)}
           path={path}
         />
       )}
@@ -137,7 +144,7 @@ function SharesDialog({
 
   return (
     <>
-      <Dialog open={isOpen} onOpenChange={onClose}>
+      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Shares</DialogTitle>

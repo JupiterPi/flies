@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import DirectoryViewer from "./-DirectoryViewer";
 import { IconLoader } from "@tabler/icons-react";
-import React from "react";
+import React, { useMemo, useState } from "react";
 import {
   LoginPage,
   useAuthInvalidationKey,
@@ -18,7 +18,6 @@ export const Route = createFileRoute("/$")({
 });
 
 function RouteComponent() {
-  const isLoggedInAsUser = useIsLoggedInAsUser();
   const { client, fs } = useServer();
   const path = Route.useParams()._splat!;
 
@@ -27,6 +26,21 @@ function RouteComponent() {
     queryKey: ["remoteFile", path, authInvalidationKey],
     queryFn: () => fs.getFileOrDirectoryInfo(path),
   });
+
+  const isLoggedInAsUser = useIsLoggedInAsUser();
+  const [isSharesDialogOpen, setIsSharesDialogOpen] = useState(false);
+  const _PathBreadcrumbs = useMemo(() => {
+    return (
+      <PathBreadcrumbs
+        path={path}
+        mayShare={
+          isLoggedInAsUser // todo: theoretically check specific permission
+        }
+        isSharesDialogOpen={isSharesDialogOpen}
+        onSharesDialogOpenChange={setIsSharesDialogOpen}
+      />
+    );
+  }, [path, isLoggedInAsUser, isSharesDialogOpen]);
 
   if (remoteItem.isLoading) {
     return <LoadingPage />;
@@ -58,15 +72,6 @@ function RouteComponent() {
       />
     );
   }
-
-  const _PathBreadcrumbs = (
-    <PathBreadcrumbs
-      path={path}
-      mayShare={
-        isLoggedInAsUser // todo: theoretically check specific permission
-      }
-    />
-  );
 
   if (remoteItem.data.type === "file") {
     const downloadLink = remoteItem.data.downloadLink;
