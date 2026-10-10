@@ -1,6 +1,7 @@
 import {
   Decoration,
   EditorView,
+  keymap,
   ViewPlugin,
   WidgetType,
   type DecorationSet,
@@ -18,6 +19,7 @@ export default function () {
     hideSyntaxTokens,
     renderLists,
     renderTaskLists,
+    toggleTaskListCommand,
   ];
 }
 
@@ -336,4 +338,38 @@ const renderTaskLists = ViewPlugin.define(() => ({}), {
       }
     },
   },
+});
+
+const toggleTaskListCommand = ViewPlugin.define(() => ({}), {
+  provide: () => [
+    keymap.of([
+      {
+        key: "Ctrl-l",
+        run: (view) => {
+          const { state } = view;
+          const changes = state.changeByRange((range) => {
+            const line = state.doc.lineAt(range.head);
+            const lineText = line.text;
+            const taskMarkerMatch = lineText.match(/^\s*[-*]\s+\[( |x)\]/);
+            if (taskMarkerMatch) {
+              const isChecked = taskMarkerMatch[1] === "x";
+              const newMarker = isChecked ? "[ ]" : "[x]";
+              const from =
+                line.from +
+                taskMarkerMatch.index! +
+                taskMarkerMatch[0].length -
+                3;
+              return {
+                changes: { from, to: from + 3, insert: newMarker },
+                range,
+              };
+            }
+            return { changes: [], range };
+          });
+          view.dispatch(changes);
+          return true;
+        },
+      },
+    ]),
+  ],
 });
