@@ -10,6 +10,7 @@ import { EditorState, Range, StateField } from "@codemirror/state";
 import { syntaxTree } from "@codemirror/language";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { type SyntaxNodeRef } from "@lezer/common";
+import { themeColors } from "./theme";
 
 export default function () {
   return [
@@ -21,6 +22,7 @@ export default function () {
     renderLists,
     renderTaskLists,
     toggleTaskListCommand,
+    renderLinks,
   ];
 }
 
@@ -389,5 +391,85 @@ const toggleTaskListCommand = ViewPlugin.define(() => ({}), {
         },
       },
     ]),
+  ],
+});
+
+const renderLinks = ViewPlugin.define(() => ({}), {
+  provide: () => [
+    StateField.define<DecorationSet>({
+      create(state) {
+        let decorations: Range<Decoration>[] = [];
+        syntaxTree(state).iterate({
+          enter(node) {
+            const pushLinkDecoration = (title: string, url: string) => {
+              decorations.push(
+                Decoration.replace({
+                  widget: new (class extends WidgetType {
+                    eq() {
+                      return true;
+                    }
+                    toDOM(): HTMLElement {
+                      const link = document.createElement("a");
+                      link.href = url;
+                      link.textContent = title;
+                      link.className = "cm-tomatenmark-link";
+                      link.target = "_blank";
+                      return link;
+                    }
+                  })(),
+                }).range(node.from, node.to),
+              );
+            };
+
+            if (
+              node.name === "Link" &&
+              !selectionTouchesNodeAtCharacter(state, node)
+            ) {
+              const markdown = state.doc.sliceString(node.from, node.to);
+              // match link title and url from markdown string
+              const match = markdown.match(/\[(.*?)\]\((.*?)\)/);
+              if (!match) return;
+              const title = match[1];
+              const url = match[2];
+              pushLinkDecoration(title, url);
+            }
+            if (
+              node.name === "URL" &&
+              !node.matchContext(["Link"]) &&
+              !selectionTouchesNodeAtCharacter(state, node)
+            ) {
+              const url = state.doc.sliceString(node.from, node.to);
+              pushLinkDecoration(url, url);
+            }
+          },
+        });
+        return Decoration.set(decorations);
+      },
+      update(_, tr) {
+        return this.create(tr.state);
+      },
+      provide: (field) => EditorView.decorations.from(field),
+    }),
+    EditorView.baseTheme({
+      ".cm-tomatenmark-link": {
+        color: themeColors.primary,
+        textDecoration: "underline",
+        // to make space for absolutely-positioned external link icon
+        marginRight: "18px",
+      },
+      ".cm-tomatenmark-link:hover": {
+        textDecoration: "none",
+      },
+      ".cm-tomatenmark-link::after": {
+        // https://tablericons.com/icon/external-link
+        // https://www.urlencoder.org
+        content:
+          'url("data:image/svg+xml,%3Csvg%0A%20%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%0A%20%20width%3D%2220%22%0A%20%20height%3D%2220%22%0A%20%20viewBox%3D%220%200%2024%2024%22%0A%20%20fill%3D%22none%22%0A%20%20stroke%3D%22%2304a351%22%0A%20%20stroke-width%3D%222%22%0A%20%20stroke-linecap%3D%22round%22%0A%20%20stroke-linejoin%3D%22round%22%0A%3E%0A%20%20%3Cpath%20d%3D%22M12%206h-6a2%202%200%200%200%20-2%202v10a2%202%200%200%200%202%202h10a2%202%200%200%200%202%20-2v-6%22%20%2F%3E%0A%20%20%3Cpath%20d%3D%22M11%2013l9%20-9%22%20%2F%3E%0A%20%20%3Cpath%20d%3D%22M15%204h5v5%22%20%2F%3E%0A%3C%2Fsvg%3E")',
+        fontWeight: "bolder",
+        fontSize: "0.8em",
+        color: themeColors.primary,
+        position: "absolute",
+      },
+    }),
   ],
 });

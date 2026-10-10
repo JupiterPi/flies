@@ -1,7 +1,7 @@
 import { tags as t } from "@lezer/highlight";
 import { createTheme, type CreateThemeOptions } from "@uiw/codemirror-themes";
 
-const themeColors = {
+export const themeColors = {
   primary: "oklch(from var(--color-primary) calc(l * 1.4) calc(c * 1.4) h)",
   secondary: "var(--color-secondary)",
 };

@@ -12,7 +12,7 @@ Tomatenmark is a markdown editor built on top of CodeMirror, with the goal of pr
 - [x] render bullet point lists
 - [x] render ordered lists
 - [x] render task lists
-- [ ] links (clickable, hide url, different kinds, ...)
+- [x] links (clickable, hide url, ...)
 - [ ] images (inserting them and saving at appropriate `attachments` location, rendering them, sensible sizing)
 - [ ] math (inline and block)
 - [x] fix: skipping of lines when navigating via arrow keys through formatted widgets apparently
@@ -35,6 +35,7 @@ Tomatenmark is a markdown editor built on top of CodeMirror, with the goal of pr
 - [ ] heading folding
 - [ ] polished readonly mode
 - [ ] handle nested blockquotes properly
+- [ ] ref links
 - [ ] better formatting of literal asterisks
 - [ ] footnotes?
 - [ ] maybe some inline html like `details` or `summary`
