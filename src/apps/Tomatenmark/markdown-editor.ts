@@ -13,6 +13,7 @@ import { type SyntaxNodeRef } from "@lezer/common";
 
 export default function () {
   return [
+    styleBetterCursorAndSelection,
     markdown({ base: markdownLanguage }),
     renderHorizontalRule,
     renderBlockquote,
@@ -22,6 +23,16 @@ export default function () {
     toggleTaskListCommand,
   ];
 }
+
+const styleBetterCursorAndSelection = EditorView.theme({
+  ".cm-cursor": {
+    borderLeftWidth: "2.5px",
+    borderRadius: "100vw",
+  },
+  ".cm-selectionBackground": {
+    borderRadius: "0.25em",
+  },
+});
 
 function selectionTouchesNodeAtCharacter(
   state: EditorState,
