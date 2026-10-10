@@ -42,6 +42,7 @@ function selectionTouchesNodeAtLine(state: EditorState, node: SyntaxNodeRef) {
   });
 }
 
+// todo: fix skipping
 const renderHorizontalRule = ViewPlugin.define(() => ({}), {
   provide: () => [
     StateField.define<DecorationSet>({
@@ -137,19 +138,32 @@ const hideSyntaxTokens = ViewPlugin.define(() => ({}), {
   provide: () => [
     StateField.define<DecorationSet>({
       create(state) {
+        const syntaxPairs = [
+          { mark: "EmphasisMark", parent: ["StrongEmphasis", "Emphasis"] },
+          { mark: "StrikethroughMark", parent: ["Strikethrough"] },
+          { mark: "CodeMark", parent: ["InlineCode"] },
+          { mark: "QuoteMark" },
+        ];
+
         let decorations: Range<Decoration>[] = [];
         syntaxTree(state).iterate({
           enter(node) {
-            if (
-              (node.name === "QuoteMark" ||
-                node.name === "EmphasisMark" ||
-                node.name === "StrikethroughMark" ||
-                node.name === "CodeMark") &&
-              !selectionTouchesNodeAtLine(state, node)
-            ) {
-              decorations.push(
-                Decoration.replace({}).range(node.from, node.to),
+            const pair = syntaxPairs.find(({ mark }) => node.name === mark);
+            if (pair) {
+              const selectionTouchesMark = selectionTouchesNodeAtCharacter(
+                state,
+                node,
               );
+              const selectionTouchesContent =
+                node.node.parent &&
+                pair.parent &&
+                pair.parent.includes(node.node.parent?.name) &&
+                selectionTouchesNodeAtCharacter(state, node.node.parent);
+              if (!selectionTouchesMark && !selectionTouchesContent) {
+                decorations.push(
+                  Decoration.replace({}).range(node.from, node.to),
+                );
+              }
             }
             if (
               node.name === "HeaderMark" &&

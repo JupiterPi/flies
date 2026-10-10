@@ -8,8 +8,7 @@ Tomatenmark is a markdown editor built on top of CodeMirror, with the goal of pr
 - [x] render horizontal rules
 - [x] render blockquotes
 - [x] hide syntax tokens such as emphasis markers etc.
-  - [ ] handle more of them
-  - [ ] also render them when inside of opening/closing marks selected
+  - [x] also render them when inside of opening/closing marks selected
 - [x] render bullet point lists
 - [x] render ordered lists
 - [x] render task lists
@@ -29,6 +28,8 @@ Tomatenmark is a markdown editor built on top of CodeMirror, with the goal of pr
 - [ ] indent wrapped text too (e.g. in lists)
 - [ ] better heading spacing?
 - [ ] background color for inline and block code
+- [ ] render code blocks better
+- [ ] render comments better
 - [ ] render ordinals more prettily
 - [ ] heading folding
 - [ ] polished readonly mode
@@ -38,4 +39,5 @@ Tomatenmark is a markdown editor built on top of CodeMirror, with the goal of pr
 - [ ] maybe some inline html like `details` or `summary`
 - [ ] clear up `theme.ts`
 - [ ] better find (`Ctrl+F`) interface
+- [ ] mobile formatting bar
 - [ ] embedding Excalidraw files (very low prio)
