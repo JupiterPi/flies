@@ -146,9 +146,7 @@ const hideSyntaxTokens = ViewPlugin.define(() => ({}), {
               !selectionTouchesNodeAtLine(state, node)
             ) {
               decorations.push(
-                Decoration.mark({
-                  attributes: { style: "display: none;" },
-                }).range(node.from, node.to),
+                Decoration.replace({}).range(node.from, node.to),
               );
             }
             if (
@@ -156,9 +154,7 @@ const hideSyntaxTokens = ViewPlugin.define(() => ({}), {
               !selectionTouchesNodeAtLine(state, node)
             ) {
               decorations.push(
-                Decoration.mark({
-                  attributes: { style: "display: none;" },
-                }).range(node.from, node.to + 1),
+                Decoration.replace({}).range(node.from, node.to + 1),
               );
             }
           },
@@ -213,13 +209,21 @@ const renderLists = ViewPlugin.define(() => ({}), {
       provide: (field) => EditorView.decorations.from(field),
     }),
     EditorView.baseTheme({
-      ".cm-tomatenmark-bullet-list-mark *": {
-        display: "none !important",
+      ".cm-tomatenmark-bullet-list-mark": {
+        position: "relative",
       },
-      ".cm-tomatenmark-bullet-list-mark::after": {
-        display: "inline !important",
+      ".cm-tomatenmark-bullet-list-mark *": {
+        color: "transparent",
+        opacity: "100%",
+      },
+      ".cm-tomatenmark-bullet-list-mark *::after": {
         content: '"•"',
         color: "var(--color-primary)",
+        fontFamily: "var(--font-sans) !important",
+        position: "absolute",
+        left: "0",
+        bottom: "0",
+        cursor: "text",
       },
       ".cm-tomatenmark-ordered-list-mark *": {
         opacity: "100% !important",
@@ -288,13 +292,13 @@ const renderTaskLists = ViewPlugin.define(() => ({}), {
       ".cm-tomatenmark-task-list-checkbox": {
         "-webkit-appearance": "none",
         appearance: "none",
-        width: "1.15em",
-        height: "1.15em",
+        width: "1em",
+        height: "1em",
+        margin: "0",
         border: "0.15em solid var(--color-primary)",
         borderRadius: "0.15em",
         display: "inline-flex",
         transform: "translateY(+3px)",
-        margin: "0 1px",
         "&:checked": {
           backgroundColor: "var(--color-primary)",
         },
