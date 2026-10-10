@@ -42,7 +42,6 @@ function selectionTouchesNodeAtLine(state: EditorState, node: SyntaxNodeRef) {
   });
 }
 
-// todo: fix skipping
 const renderHorizontalRule = ViewPlugin.define(() => ({}), {
   provide: () => [
     StateField.define<DecorationSet>({
@@ -55,21 +54,10 @@ const renderHorizontalRule = ViewPlugin.define(() => ({}), {
               !selectionTouchesNodeAtLine(state, node)
             ) {
               decorations.push(
-                Decoration.replace({
-                  widget: new (class extends WidgetType {
-                    eq() {
-                      return true;
-                    }
-                    toDOM(): HTMLElement {
-                      const div = document.createElement("div");
-                      div.className = "cm-tomatenmark-hr";
-                      div.appendChild(document.createElement("hr"));
-                      return div;
-                    }
-                    ignoreEvent() {
-                      return false;
-                    }
-                  })(),
+                Decoration.mark({
+                  attributes: {
+                    class: "cm-tomatenmark-hr",
+                  },
                 }).range(node.from, node.to),
               );
             }
@@ -84,11 +72,16 @@ const renderHorizontalRule = ViewPlugin.define(() => ({}), {
     }),
     EditorView.baseTheme({
       ".cm-tomatenmark-hr": {
-        height: "22.4px",
+        color: "transparent !important",
+      },
+      ".cm-tomatenmark-hr::after": {
+        content: '""',
+        position: "absolute",
+        display: "block",
+        borderTop: "3px solid var(--color-border)",
         width: "100%",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
+        borderRadius: "100vw",
+        transform: "translateY(-0.75em)",
       },
       ".cm-tomatenmark-hr hr": {
         width: "100%",
