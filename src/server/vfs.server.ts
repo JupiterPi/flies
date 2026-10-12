@@ -1,6 +1,7 @@
 import { env } from "#/env";
 import { permissions, type Permission, type Privileges } from "./permissions";
 import * as fs from "node:fs/promises";
+import { FileFinder } from "@ff-labs/fff-bun";
 
 function transformPath(path: string) {
   if (path.startsWith("/")) {
@@ -8,6 +9,9 @@ function transformPath(path: string) {
   }
   return `${env.paths.fs}/${path}`;
 }
+
+const finder = FileFinder.create({ basePath: transformPath("") });
+if (!finder.ok) throw new Error("Failed to create FileFinder: " + finder.error);
 
 export const vfs = {
   async exists(privileges: Privileges, path: string) {
@@ -87,6 +91,81 @@ export const vfs = {
     );
     await fs.rename(transformPath(oldPath), transformPath(newPath));
   },
+
+  async search(
+    privileges: Privileges,
+    query: string,
+    type: "file" | "directory" | "any" = "any",
+    pageSize: number | undefined = undefined,
+    pageIndex: number | undefined = undefined,
+  ) {
+    if (!finder.value.waitForScan()) return null;
+    const results = await (async () => {
+      if (type === "directory") {
+        const result = finder.value.directorySearch(query, {
+          pageSize,
+          pageIndex,
+        });
+        if (result.ok) {
+          return result.value.items.map((item, i) => ({
+            path: item.relativePath,
+            score: result.value.scores[i]!.total,
+          }));
+        } else {
+          throw result.error;
+        }
+      } else if (type === "file") {
+        const result = finder.value.fileSearch(query, { pageSize, pageIndex });
+        if (result.ok) {
+          return result.value.items.map((item, i) => ({
+            path: item.relativePath,
+            score: result.value.scores[i]!.total,
+          }));
+        } else {
+          throw result.error;
+        }
+      } else {
+        const result = finder.value.mixedSearch(query, { pageSize, pageIndex });
+        if (result.ok) {
+          return result.value.items.map((item, i) => ({
+            path: item.item.relativePath,
+            score: result.value.scores[i]!.total,
+          }));
+        } else {
+          throw result.error;
+        }
+      }
+    })();
+    return results
+      .filter(({ path }) => permissions.read(path).check(privileges))
+      .sort((a, b) => b.score - a.score);
+  },
+
+  /**
+   * Finds a directory with the given name inside of a parent directory, searching recursively up the directory tree,
+   * similar to how ".git" or "node_modules" directories may be found in (recursively) parent directories.
+   */
+  /* async findNearestDirectoryInsideParentRecursively(
+    privileges: Privileges,
+    origin: string,
+    query: string,
+  ) {
+    assertPermission(privileges, permissions.read(origin));
+    let currentParent = origin.split("/");
+    while (currentParent.length > 0) {
+      currentParent.pop();
+      const currentParentPath = currentParent.join("/");
+      assertPermission(privileges, permissions.read(currentParentPath));
+      for (const entry of await fs.readdir(transformPath(currentParentPath), {
+        withFileTypes: true,
+      })) {
+        if (entry.isDirectory() && entry.name === query) {
+          return `${currentParentPath}/${entry.name}`;
+        }
+      }
+    }
+    return null;
+  }, */
 } satisfies Record<string, (privileges: Privileges, ...args: any[]) => void>;
 // all vfs functions need to check for permissions, which is enforced here
 
