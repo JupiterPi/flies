@@ -8,7 +8,7 @@ import {
   type DecorationSet,
 } from "@codemirror/view";
 import { EditorState, Range, StateField } from "@codemirror/state";
-import { syntaxTree } from "@codemirror/language";
+import { ensureSyntaxTree, syntaxTree } from "@codemirror/language";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { type SyntaxNodeRef } from "@lezer/common";
 import { themeColors } from "./theme";
@@ -39,7 +39,7 @@ const styleBetterCursorAndSelection = EditorView.theme({
   },
 });
 
-// selection utilities
+// utilities
 
 function selectionTouchesRange(state: EditorState, from: number, to: number) {
   return state.selection.ranges.some((selection) => {
@@ -66,6 +66,10 @@ function selectionTouchesNodeAtLine(state: EditorState, node: SyntaxNodeRef) {
   });
 }
 
+function goodSyntaxTree(state: EditorState) {
+  return ensureSyntaxTree(state, state.doc.length, 1000) ?? syntaxTree(state);
+}
+
 // markdown features
 
 const renderHorizontalRule = ViewPlugin.define(() => ({}), {
@@ -73,7 +77,7 @@ const renderHorizontalRule = ViewPlugin.define(() => ({}), {
     StateField.define<DecorationSet>({
       create(state) {
         let decorations: Range<Decoration>[] = [];
-        syntaxTree(state).iterate({
+        goodSyntaxTree(state).iterate({
           enter(node) {
             if (
               node.name === "HorizontalRule" &&
@@ -123,7 +127,7 @@ const renderBlockquote = ViewPlugin.define(() => ({}), {
     StateField.define<DecorationSet>({
       create(state) {
         let decorations: Range<Decoration>[] = [];
-        syntaxTree(state).iterate({
+        goodSyntaxTree(state).iterate({
           enter(node) {
             if (node.name === "Blockquote") {
               decorations.push(
@@ -165,7 +169,7 @@ const hideSyntaxTokens = ViewPlugin.define(() => ({}), {
         ];
 
         let decorations: Range<Decoration>[] = [];
-        syntaxTree(state).iterate({
+        goodSyntaxTree(state).iterate({
           enter(node) {
             const pair = syntaxPairs.find(({ mark }) => node.name === mark);
             if (pair) {
@@ -209,7 +213,7 @@ const renderLists = ViewPlugin.define(() => ({}), {
     StateField.define<DecorationSet>({
       create(state) {
         let decorations: Range<Decoration>[] = [];
-        syntaxTree(state).iterate({
+        goodSyntaxTree(state).iterate({
           enter(node) {
             if (
               node.name === "ListMark" &&
@@ -272,7 +276,7 @@ const renderTaskLists = ViewPlugin.define(() => ({}), {
     StateField.define<DecorationSet>({
       create(state) {
         let decorations: Range<Decoration>[] = [];
-        syntaxTree(state).iterate({
+        goodSyntaxTree(state).iterate({
           enter(node) {
             if (node.name === "Task") {
               const taskMarker = node.node.firstChild!;
@@ -412,7 +416,7 @@ const renderLinks = ViewPlugin.define(() => ({}), {
     StateField.define<DecorationSet>({
       create(state) {
         let decorations: Range<Decoration>[] = [];
-        syntaxTree(state).iterate({
+        goodSyntaxTree(state).iterate({
           enter(node) {
             const pushLinkDecoration = (title: string, url: string) => {
               decorations.push(
@@ -531,7 +535,7 @@ const renderMath = ViewPlugin.fromClass(
           handleMatch(match, false);
         }
       }
-      return Decoration.set(decorations);
+      return Decoration.set(decorations, true);
     }
   },
   {

@@ -85,6 +85,10 @@ function TomatenmarkEditor({
       <style>{` .cm-focused { outline: none !important; } `}</style>
       {/* remove widget buffer */}
       <style>{` .cm-widgetBuffer { display: none !important; } `}</style>
+      {/* remove scroll bar */}
+      <style>{` .cm-scroller { overflow: hidden !important; } `}</style>
+      {/* make the background a bit lighter */}
+      <style>{` body { background-color: #111 !important; } `}</style>
     </>
   );
 }

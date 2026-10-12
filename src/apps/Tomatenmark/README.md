@@ -24,6 +24,7 @@ Tomatenmark is a markdown editor built on top of CodeMirror, with the goal of pr
 - [x] keybind to move lines up or down -> already exists
 - [x] make checkboxes prettier, and check mobile usage again
 - [ ] formatting keybinds like `Ctrl+B` etc., as well as `*` etc.
+- [ ] make it an actually scrollable viewport to have actual visible ranges
 - [ ] tables
 - [ ] make sure ordinals always update, also on deletion
 - [ ] linking between files in Flies (autocompletion, updating upon rename)
