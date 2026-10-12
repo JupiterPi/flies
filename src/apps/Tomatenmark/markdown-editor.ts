@@ -3,6 +3,7 @@ import {
   EditorView,
   keymap,
   ViewPlugin,
+  ViewUpdate,
   WidgetType,
   type DecorationSet,
 } from "@codemirror/view";
@@ -11,6 +12,7 @@ import { syntaxTree } from "@codemirror/language";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { type SyntaxNodeRef } from "@lezer/common";
 import { themeColors } from "./theme";
+import { getMathJaxSVG } from "./mathjax";
 
 export default function () {
   return [
@@ -23,6 +25,7 @@ export default function () {
     renderTaskLists,
     toggleTaskListCommand,
     renderLinks,
+    renderMath,
   ];
 }
 
@@ -35,6 +38,14 @@ const styleBetterCursorAndSelection = EditorView.theme({
     borderRadius: "0.25em",
   },
 });
+
+// selection utilities
+
+function selectionTouchesRange(state: EditorState, from: number, to: number) {
+  return state.selection.ranges.some((selection) => {
+    return selection.from <= to && selection.to >= from;
+  });
+}
 
 function selectionTouchesNodeAtCharacter(
   state: EditorState,
@@ -54,6 +65,8 @@ function selectionTouchesNodeAtLine(state: EditorState, node: SyntaxNodeRef) {
     return selectionLineFrom <= nodeLineTo && selectionLineTo >= nodeLineFrom;
   });
 }
+
+// markdown features
 
 const renderHorizontalRule = ViewPlugin.define(() => ({}), {
   provide: () => [
@@ -473,3 +486,85 @@ const renderLinks = ViewPlugin.define(() => ({}), {
     }),
   ],
 });
+
+const renderMath = ViewPlugin.fromClass(
+  class {
+    decorations: DecorationSet;
+    constructor(view: EditorView) {
+      this.decorations = this.renderMath(view);
+    }
+    update(update: ViewUpdate) {
+      if (update.docChanged || update.viewportChanged || update.selectionSet) {
+        this.decorations = this.renderMath(update.view);
+      }
+    }
+
+    renderMath(view: EditorView): DecorationSet {
+      let decorations: Range<Decoration>[] = [];
+      for (const range of view.visibleRanges) {
+        const text = view.state.doc.sliceString(range.from, range.to);
+        const handleMatch = (match: RegExpExecArray, inline: boolean) => {
+          const math = match[1];
+          const from = range.from + match.index!;
+          const to = from + match[0].length;
+
+          if (selectionTouchesRange(view.state, from, to)) {
+            decorations.push(
+              Decoration.mark({
+                class: "cm-tomatenmark-math-editing",
+              }).range(from, to),
+            );
+          } else {
+            decorations.push(
+              Decoration.replace({
+                widget: new MathWidget(math, inline),
+              }).range(from, to),
+            );
+          }
+        };
+        for (const match of text.matchAll(
+          /(?<!\$)\$(?!\$)([^$\n]+?)(?<!\$)\$(?!\$)/g /* (seems to work) */,
+        )) {
+          handleMatch(match, true);
+        }
+        for (const match of text.matchAll(/\$\$(.+?)\$\$/gs)) {
+          handleMatch(match, false);
+        }
+      }
+      return Decoration.set(decorations);
+    }
+  },
+  {
+    decorations: (v) => v.decorations,
+    provide: () => [
+      EditorView.baseTheme({
+        ".cm-tomatenmark-math": {
+          display: "inline-block",
+        },
+        ".cm-tomatenmark-math-editing": {
+          fontFamily: "var(--font-mono)",
+          color: themeColors.primary,
+        },
+      }),
+    ],
+  },
+);
+class MathWidget extends WidgetType {
+  constructor(
+    private math: string,
+    private inline: boolean,
+  ) {
+    super();
+  }
+  eq(widget: MathWidget) {
+    return this.math === widget.math && this.inline === widget.inline;
+  }
+  toDOM(): HTMLElement {
+    const tempContainer = document.createElement("span");
+    const svg = getMathJaxSVG(this.math, this.inline);
+    tempContainer.innerHTML = svg;
+    const svgElement = tempContainer.firstElementChild as HTMLElement;
+    svgElement.classList.add("cm-tomatenmark-math");
+    return svgElement;
+  }
+}

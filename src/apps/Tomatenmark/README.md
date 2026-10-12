@@ -14,7 +14,8 @@ Tomatenmark is a markdown editor built on top of CodeMirror, with the goal of pr
 - [x] render task lists
 - [x] links (clickable, hide url, ...)
 - [ ] images (inserting them and saving at appropriate `attachments` location, rendering them, sensible sizing)
-- [ ] math (inline and block)
+- [x] math (inline and block)
+  - [ ] implement properly instead of regex, so that escaping etc. is respected
 - [x] fix: skipping of lines when navigating via arrow keys through formatted widgets apparently
       (apparently, that happens because the cursor won't move into widgets, so we use a mark decoration instead and hide the element)
 - [x] fix: proper `Home` key behaviour

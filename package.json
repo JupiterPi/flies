@@ -48,6 +48,7 @@
     "dayjs": "^1.11.23",
     "immer": "^11.1.18",
     "masonic": "^4.1.0",
+    "mathjax-full": "^3.2.2",
     "nitro": "3.0.260610-beta",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
