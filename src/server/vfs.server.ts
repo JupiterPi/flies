@@ -92,53 +92,44 @@ export const vfs = {
     await fs.rename(transformPath(oldPath), transformPath(newPath));
   },
 
-  async search(
-    privileges: Privileges,
-    query: string,
-    type: "file" | "directory" | "any" = "any",
-    pageSize: number | undefined = undefined,
-    pageIndex: number | undefined = undefined,
-  ) {
-    if (!finder.value.waitForScan()) return null;
-    const results = await (async () => {
-      if (type === "directory") {
-        const result = finder.value.directorySearch(query, {
-          pageSize,
-          pageIndex,
-        });
-        if (result.ok) {
-          return result.value.items.map((item, i) => ({
-            path: item.relativePath,
-            score: result.value.scores[i]!.total,
-          }));
-        } else {
-          throw result.error;
-        }
-      } else if (type === "file") {
-        const result = finder.value.fileSearch(query, { pageSize, pageIndex });
-        if (result.ok) {
-          return result.value.items.map((item, i) => ({
-            path: item.relativePath,
-            score: result.value.scores[i]!.total,
-          }));
-        } else {
-          throw result.error;
-        }
-      } else {
-        const result = finder.value.mixedSearch(query, { pageSize, pageIndex });
-        if (result.ok) {
-          return result.value.items.map((item, i) => ({
-            path: item.item.relativePath,
-            score: result.value.scores[i]!.total,
-          }));
-        } else {
-          throw result.error;
-        }
-      }
-    })();
-    return results
-      .filter(({ path }) => permissions.read(path).check(privileges))
-      .sort((a, b) => b.score - a.score);
+  async search(privileges: Privileges, query: string) {
+    if (!(await finder.value.waitForScan())) return null;
+
+    const pathResults = finder.value.mixedSearch(query);
+    if (!pathResults.ok) {
+      throw pathResults.error;
+    }
+
+    const contentResults = finder.value.grep(query, {
+      mode: "fuzzy",
+      beforeContext: 3,
+      afterContext: 3,
+    });
+    if (!contentResults.ok) {
+      throw contentResults.error;
+    }
+
+    return {
+      path: pathResults.value.items
+        .filter((item) =>
+          permissions.read(item.item.relativePath).check(privileges),
+        )
+        .map((item) => ({
+          path: item.item.relativePath,
+        })),
+      content: contentResults.value.items
+        .filter((item) => permissions.read(item.relativePath).check(privileges))
+        .map((item) => ({
+          path: item.relativePath,
+          line: item.lineNumber,
+          content: item.lineContent,
+          context: [
+            ...(item.contextBefore ?? []),
+            item.lineContent,
+            ...(item.contextAfter ?? []),
+          ].join("\n"),
+        })),
+    };
   },
 
   /**

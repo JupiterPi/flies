@@ -7,7 +7,13 @@ import {
   BreadcrumbSeparator,
 } from "#/components/ui/breadcrumb";
 import { Button } from "#/components/ui/button";
-import { IconCopy, IconDots, IconTrash } from "@tabler/icons-react";
+import {
+  IconCopy,
+  IconDots,
+  IconSearch,
+  IconShare,
+  IconTrash,
+} from "@tabler/icons-react";
 import { Link } from "@tanstack/react-router";
 import React, { useState } from "react";
 import {
@@ -23,6 +29,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "#/components/ui/dropdown-menu";
 import { Toaster } from "@/components/ui/toast";
@@ -38,6 +45,8 @@ import {
 } from "#/components/ui/field";
 import { Input } from "#/components/ui/input";
 import { Switch } from "#/components/ui/switch";
+import { Kbd } from "#/components/ui/kbd";
+import { useGlobalHotkeys } from "./-global-hotkeys";
 
 export default function PathBreadcrumbs({
   path,
@@ -51,6 +60,7 @@ export default function PathBreadcrumbs({
   onSharesDialogOpenChange: (open: boolean) => void;
 }) {
   const pathSegments = path.split("/").filter((segment) => segment !== "");
+  const { openSearch } = useGlobalHotkeys();
   return (
     <>
       <Breadcrumb>
@@ -78,7 +88,7 @@ export default function PathBreadcrumbs({
               </BreadcrumbItem>
             </React.Fragment>
           ))}
-          {/* <DropdownMenu>
+          <DropdownMenu>
             <DropdownMenuTrigger
               render={
                 <Button variant="ghost" size="xs" className="rounded-full">
@@ -86,27 +96,27 @@ export default function PathBreadcrumbs({
                 </Button>
               }
             />
-            <DropdownMenuContent>
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.preventDefault();
-                  onSharesDialogOpenChange(true);
-                }}
-              >
-                Share
+            <DropdownMenuContent className="w-fit">
+              <DropdownMenuItem onClick={() => openSearch()}>
+                <IconSearch />
+                Search
+                <DropdownMenuShortcut>
+                  <Kbd>Ctrl+O</Kbd>
+                </DropdownMenuShortcut>
               </DropdownMenuItem>
+              {mayShare && (
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onSharesDialogOpenChange(true);
+                  }}
+                >
+                  <IconShare />
+                  Share
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
-          </DropdownMenu> */}
-          {mayShare && (
-            <Button
-              variant="ghost"
-              size="xs"
-              className="rounded-full"
-              onClick={() => onSharesDialogOpenChange(true)}
-            >
-              <IconDots />
-            </Button>
-          )}
+          </DropdownMenu>
         </BreadcrumbList>
       </Breadcrumb>
       {mayShare && (

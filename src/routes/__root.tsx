@@ -14,7 +14,7 @@ import { ORPCClientProvider } from "#/client/orpc";
 import z from "zod";
 import { zodValidator } from "@tanstack/zod-adapter";
 import { createContext, useContext, useEffect, useState } from "react";
-import { GlobalHotkeys } from "./-global-hotkeys";
+import { GlobalSearchHotkey } from "./-global-hotkeys";
 
 const ShareTokenSearchSchema = z.object({
   share: z.string().optional(),
@@ -59,8 +59,9 @@ function RootComponent() {
           <DetectShareTokenQueryParam />
           <ThemeProvider>
             <OtherToasterContext value={{ setOtherToaster }}>
-              <GlobalHotkeys />
-              <Outlet />
+              <GlobalSearchHotkey>
+                <Outlet />
+              </GlobalSearchHotkey>
               {!otherToaster && <Toaster />}
             </OtherToasterContext>
           </ThemeProvider>
