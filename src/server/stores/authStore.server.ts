@@ -1,8 +1,8 @@
-import { env } from "#/env";
 import z from "zod";
 import { produce } from "immer";
 import { Store } from "./stores.server";
 import { Dashboard } from "../userConfiguration";
+import { authStoreFile } from "../vfs.server";
 
 // schema
 
@@ -63,11 +63,7 @@ function readShareToken(shareToken: string) {
 
 // api
 
-const authStore = await Store.fromFile(
-  Bun.file(`${env.paths.data}/auth.json`),
-  AuthStoreSchema,
-  {},
-);
+const authStore = await Store.fromFile(authStoreFile, AuthStoreSchema, {});
 
 /* export async function isAdminPassword(password: string): Promise<boolean> {
   const authStore = await readAuthStore();

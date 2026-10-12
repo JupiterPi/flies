@@ -1,11 +1,11 @@
 import handler, { createServerEntry } from "@tanstack/react-start/server-entry";
-import * as fs from "node:fs";
 import { authFromRequest } from "./server/auth.server";
 import { runSavedApps } from "./apps/runningAppsManager.server";
 import { instantiateApp } from "./apps/appsRegistry";
 import { env } from "./env";
-import { permissions } from "./server/permissions";
+import { permissions, Privileges } from "./server/permissions";
 import { joinPath, pathFilename } from "./utils";
+import { vfs } from "./server/vfs.server";
 
 runSavedApps();
 
@@ -15,9 +15,8 @@ if (env.rateLimitingHeader === "") {
   );
 }
 
-const topLevelDirectories = fs
-  .readdirSync(env.paths.fs, { withFileTypes: true })
-  .filter((entry) => entry.isDirectory())
+const topLevelDirectories = (await vfs.listDir(Privileges.PRIVILEGES_all(), ""))
+  .filter((entry) => entry.type === "directory")
   .map((entry) => entry.name);
 console.log("Top-level directories in DATA_DIR:", topLevelDirectories);
 
@@ -36,8 +35,8 @@ async function routeRawFileRequest(request: Request) {
       const filePath = joinPath(decodeURIComponent(url.pathname));
       // is a request to an fs item
       const isDirectory =
-        fs.existsSync(env.paths.fs + "/" + filePath) &&
-        fs.statSync(env.paths.fs + "/" + filePath).isDirectory();
+        (await vfs.getInfo(Privileges.PRIVILEGES_all(), filePath)).type ===
+        "directory";
       const rawQueryParam = url.searchParams.get("raw");
       const isRawFileRequested = rawQueryParam !== null || rawQueryParam === "";
       const isUnhandledFileType =
@@ -62,14 +61,18 @@ async function routeRawFileRequest(request: Request) {
         }
         // todo: when no session cookie is detected, instead of failing, it would be nice to instead
         // return the app with a login prompt, and then it would retry the request with the session cookie
-        const fsFile = Bun.file(env.paths.fs + "/" + joinPath(filePath));
-        if (await fsFile.exists()) {
-          return new Response(fsFile.stream(), {
-            headers: {
-              "Content-Type": fsFile.type || "application/octet-stream",
-              "Content-Disposition": `inline; filename="${pathFilename(filePath)}"`,
+        if (await vfs.exists(auth.privileges, filePath)) {
+          return new Response(
+            await vfs.downloadFile(auth.privileges, filePath),
+            {
+              headers: {
+                "Content-Type":
+                  vfs.getMimeType(auth.privileges, filePath) ||
+                  "application/octet-stream",
+                "Content-Disposition": `inline; filename="${pathFilename(filePath)}"`,
+              },
             },
-          });
+          );
         }
       }
       break;

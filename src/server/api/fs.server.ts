@@ -2,12 +2,10 @@ import { os } from "@orpc/server";
 import z from "zod";
 import "@orpc/openapi/extensions/route";
 import { openapi } from "@orpc/openapi";
-import * as fs from "node:fs/promises";
 import type { ResponseHeadersHandlerPluginContext } from "@orpc/server/plugins";
-import { env } from "#/env";
 import { assertPermission, auth } from "../auth.server";
 import { permissions } from "../permissions";
-import { joinPath } from "#/utils";
+import { vfs } from "../vfs.server";
 
 export const fsRoutes = os.meta(openapi({ prefix: "/fs" })).router({
   getInfo: os
@@ -31,14 +29,14 @@ export const fsRoutes = os.meta(openapi({ prefix: "/fs" })).router({
         const mayWrite = permissions
           .write(input.path)
           .check(context.privileges);
-        const path = env.paths.fs + "/" + joinPath(input.path);
-        if (await fs.exists(path)) {
-          const stat = await fs.stat(path);
-          return stat.isDirectory()
-            ? { type: "directory", readonly: !mayWrite }
-            : { type: "file", readonly: !mayWrite };
-        } else {
+        const info = await vfs.getInfo(context.privileges, input.path);
+        if (info.type === "not_found") {
           return { type: "not_found" };
+        } else {
+          return {
+            type: info.type,
+            readonly: !mayWrite,
+          };
         }
       },
     ),
@@ -48,17 +46,7 @@ export const fsRoutes = os.meta(openapi({ prefix: "/fs" })).router({
     .input(z.object({ path: z.string() }))
     .handler(async ({ context, input }) => {
       assertPermission(context.privileges, permissions.read(input.path));
-      const entries = await fs.readdir(
-        env.paths.fs + "/" + joinPath(input.path),
-        {
-          withFileTypes: true,
-        },
-      );
-      return entries.map((entry) => ({
-        type: entry.isDirectory() ? ("directory" as const) : ("file" as const),
-        name: entry.name,
-        path: `${input.path}/${entry.name}`,
-      }));
+      return await vfs.listDir(context.privileges, input.path);
     }),
   createEmptyFile: os
     .route({ method: "POST", path: "/create-empty-file/{+path}" })
@@ -66,7 +54,7 @@ export const fsRoutes = os.meta(openapi({ prefix: "/fs" })).router({
     .input(z.object({ path: z.string() }))
     .handler(async ({ context, input }) => {
       assertPermission(context.privileges, permissions.write(input.path));
-      await Bun.file(env.paths.fs + "/" + joinPath(input.path)).write("");
+      return await vfs.createEmptyFile(context.privileges, input.path);
     }),
   uploadFile: os
     .route({ method: "POST", path: "/upload-file/{+path}" })
@@ -74,9 +62,7 @@ export const fsRoutes = os.meta(openapi({ prefix: "/fs" })).router({
     .input(z.object({ path: z.string(), file: z.file() }))
     .handler(async ({ context, input }) => {
       assertPermission(context.privileges, permissions.write(input.path));
-      await Bun.file(env.paths.fs + "/" + joinPath(input.path)).write(
-        await input.file.bytes(),
-      );
+      await vfs.uploadFile(context.privileges, input.path, input.file);
     }),
   delete: os
     .route({ method: "DELETE", path: "/delete/{+path}" })
@@ -84,10 +70,7 @@ export const fsRoutes = os.meta(openapi({ prefix: "/fs" })).router({
     .input(z.object({ path: z.string() }))
     .handler(async ({ context, input }) => {
       assertPermission(context.privileges, permissions.write(input.path));
-      await fs.rm(env.paths.fs + "/" + joinPath(input.path), {
-        recursive: true,
-        force: true,
-      });
+      await vfs.delete(context.privileges, input.path);
     }),
   createDirectory: os
     .route({ method: "POST", path: "/create-directory/{+path}" })
@@ -95,9 +78,7 @@ export const fsRoutes = os.meta(openapi({ prefix: "/fs" })).router({
     .input(z.object({ path: z.string() }))
     .handler(async ({ context, input }) => {
       assertPermission(context.privileges, permissions.write(input.path));
-      await fs.mkdir(env.paths.fs + "/" + joinPath(input.path), {
-        recursive: true,
-      });
+      await vfs.createDirectory(context.privileges, input.path);
     }),
   downloadFile: os
     .$context<ResponseHeadersHandlerPluginContext>()
@@ -107,9 +88,11 @@ export const fsRoutes = os.meta(openapi({ prefix: "/fs" })).router({
     .output(z.instanceof(ReadableStream<Uint8Array<ArrayBuffer>>))
     .handler(async ({ context, input }) => {
       assertPermission(context.privileges, permissions.read(input.path));
-      const file = Bun.file(env.paths.fs + "/" + joinPath(input.path));
-      context.resHeaders?.set("Content-Type", file.type);
-      return file.stream();
+      context.resHeaders?.set(
+        "Content-Type",
+        vfs.getMimeType(context.privileges, input.path),
+      );
+      return await vfs.downloadFile(context.privileges, input.path);
     }),
   move: os
     .route({ method: "POST", path: "/move/{+oldPath}" })
@@ -118,9 +101,6 @@ export const fsRoutes = os.meta(openapi({ prefix: "/fs" })).router({
     .handler(async ({ context, input }) => {
       assertPermission(context.privileges, permissions.write(input.oldPath));
       assertPermission(context.privileges, permissions.write(input.newPath));
-      await fs.rename(
-        env.paths.fs + "/" + joinPath(input.oldPath),
-        env.paths.fs + "/" + joinPath(input.newPath),
-      );
+      await vfs.move(context.privileges, input.oldPath, input.newPath);
     }),
 });

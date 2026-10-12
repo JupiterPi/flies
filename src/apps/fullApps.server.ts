@@ -8,12 +8,11 @@ import {
   type Operation,
 } from "./operations";
 import { Store } from "#/server/stores/stores.server";
-
 import type { FullApp } from "./fullApps";
-import { env } from "#/env";
 import { assertPermission, auth } from "#/server/auth.server";
-import { permissions } from "#/server/permissions";
-import { joinPath } from "#/utils";
+import { permissions, Privileges } from "#/server/permissions";
+import { vfs } from "#/server/vfs.server";
+
 export class OperationsBasedFile<
   schema extends z.ZodObject,
   operations extends Record<string, Operation<any, any>>,
@@ -28,8 +27,25 @@ export class OperationsBasedFile<
     schema extends z.ZodObject,
     operations extends Record<string, Operation<any, any>>,
   >(path: string, app: FullApp<schema, operations>) {
-    const fileStore = await Store.fromFile(
-      Bun.file(env.paths.fs + "/" + joinPath(path)),
+    const privileges = Privileges.PRIVILEGES_forApp(path);
+    const fileStore = await Store.fromWrapper(
+      {
+        exists: () => vfs.exists(privileges, path),
+        json: async () => {
+          return JSON.parse(await vfs.readTextFile(privileges, path));
+        },
+        write: async (data: string) => {
+          await vfs.writeTextFile(privileges, path, data);
+        },
+        name: path,
+        isEmpty: async () => {
+          const info = await vfs.getInfo(privileges, path);
+          return (
+            info.type === "not_found" ||
+            (info.type === "file" && info.size === 0)
+          );
+        },
+      },
       app.dataSchema,
       app.newFileDataJson,
     );

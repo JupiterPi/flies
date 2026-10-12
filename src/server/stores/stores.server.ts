@@ -1,10 +1,18 @@
 import type z from "zod";
 
+export interface StoreFile {
+  exists(): Promise<boolean>;
+  json(): Promise<any>;
+  write(data: string): Promise<void>;
+  readonly name: string | undefined;
+  isEmpty(): Promise<boolean>;
+}
+
 export class Store<T extends z.ZodObject> {
   private data: z.infer<T> | null = null;
 
   private constructor(
-    private file: Bun.BunFile,
+    private file: StoreFile,
     private schema: T,
     private initialData: z.input<T>,
     private writeDelayMs: number = 100,
@@ -16,13 +24,28 @@ export class Store<T extends z.ZodObject> {
     initialData: z.input<T>,
     writeDelayMs?: number,
   ) {
+    const wrapper: StoreFile = {
+      exists: () => file.exists(),
+      json: () => file.json(),
+      write: (data: string) => file.write(data).then(() => {}),
+      name: file.name,
+      isEmpty: async () => file.size === 0,
+    };
+    return await Store.fromWrapper(wrapper, schema, initialData, writeDelayMs);
+  }
+  static async fromWrapper<T extends z.ZodObject>(
+    file: StoreFile,
+    schema: T,
+    initialData: z.input<T>,
+    writeDelayMs?: number,
+  ) {
     const store = new Store(file, schema, initialData, writeDelayMs);
     await store.init();
     return store;
   }
 
   private async init() {
-    if (!(await this.file.exists()) || this.file.size === 0) {
+    if (!(await this.file.exists()) || (await this.file.isEmpty())) {
       this.data = this.schema.parse(this.initialData);
       await this.file.write(JSON.stringify(this.data, null, 2));
     } else {

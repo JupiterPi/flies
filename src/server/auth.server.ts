@@ -38,7 +38,7 @@ export function createSession(user: User) {
   sessions.set(sessionId, {
     sessionStart: new Date(),
     user,
-    privileges: Privileges.forUser(user),
+    privileges: Privileges.PRIVILEGES_forUser(user),
   });
   return sessionId;
 }
@@ -81,14 +81,17 @@ export async function authFromRequest(
           if (!share) continue;
           privileges = Privileges.combine([
             privileges,
-            Privileges.forShare(share),
+            Privileges.PRIVILEGES_forShare(share),
           ]);
         } else {
           const u = AuthStore.verifyUser(username, password);
           if (!u) continue;
           if (user) return { error: "Multiple user credentials provided" };
           user = u;
-          privileges = Privileges.combine([privileges, Privileges.forUser(u)]);
+          privileges = Privileges.combine([
+            privileges,
+            Privileges.PRIVILEGES_forUser(u),
+          ]);
         }
       }
       if (user || privileges !== Privileges.unauthenticated()) {
@@ -121,7 +124,7 @@ export async function authFromRequest(
     if (!share) return { error: "Invalid share query param" };
     return {
       user: undefined,
-      privileges: Privileges.forShare(share),
+      privileges: Privileges.PRIVILEGES_forShare(share),
     };
   };
   const auth =

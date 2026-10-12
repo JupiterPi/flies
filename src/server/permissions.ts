@@ -1,16 +1,19 @@
 import type { Share, User } from "./stores/authStore.server";
 import * as AuthStore from "./stores/authStore.server";
 
+// designed so that privileges can only be created using the methods prefiyed PRIVILEGES_
+// this way, they can be easily identified in the code as potentially dangerous
+
 export class Privileges {
   static unauthenticated() {
     return new Privileges(false, [], []);
   }
 
-  static forUser(user: User) {
+  static PRIVILEGES_forUser(user: User) {
     return new Privileges(user.admin, "*", "*");
   }
 
-  static forShare(share: Share) {
+  static PRIVILEGES_forShare(share: Share) {
     return new Privileges(
       false,
       [share.path],
@@ -18,7 +21,24 @@ export class Privileges {
     );
   }
 
-  constructor(
+  static PRIVILEGES_all() {
+    return new Privileges(true, "*", "*");
+  }
+
+  static PRIVILEGES_forApp(path: string) {
+    return new Privileges(false, [path], [path]);
+  }
+
+  private static INTEGRITY_TAG = Symbol("Privileges");
+  private readonly integrityTag = Privileges.INTEGRITY_TAG;
+  checkIntegrity() {
+    if (this.integrityTag !== Privileges.INTEGRITY_TAG) {
+      throw new Error("Privileges object integrity check failed");
+    }
+    return true;
+  }
+
+  private constructor(
     public readonly admin: boolean,
     public readonly readPaths: "*" | string[],
     public readonly writePaths: "*" | string[],
@@ -39,29 +59,33 @@ export class Privileges {
 export const permissions = {
   admin: {
     description: "admin",
-    check: (privileges: Privileges) => privileges.admin,
+    check: (privileges: Privileges) =>
+      privileges.checkIntegrity() && privileges.admin,
   },
   read: (path: string) => ({
     description: `read path ${path}`,
     check: (privileges: Privileges) =>
-      privileges.readPaths === "*" ||
-      privileges.readPaths.some((p) => path.startsWith(p)) ||
-      AuthStore.getShares().some(
-        (s) => s.password === null && path.startsWith(s.path),
-      ),
+      privileges.checkIntegrity() &&
+      (privileges.readPaths === "*" ||
+        privileges.readPaths.some((p) => path.startsWith(p)) ||
+        AuthStore.getShares().some(
+          (s) => s.password === null && path.startsWith(s.path),
+        )),
   }),
   write: (path: string) => ({
     description: `write to path ${path}`,
     check: (privileges: Privileges) =>
-      privileges.writePaths === "*" ||
-      privileges.writePaths.some((p) => path.startsWith(p)) ||
-      AuthStore.getShares().some(
-        (s) => s.password === null && path.startsWith(s.path) && s.allowWrite,
-      ),
+      privileges.checkIntegrity() &&
+      (privileges.writePaths === "*" ||
+        privileges.writePaths.some((p) => path.startsWith(p)) ||
+        AuthStore.getShares().some(
+          (s) => s.password === null && path.startsWith(s.path) && s.allowWrite,
+        )),
   }),
   createShares: {
     description: "create shares",
-    check: (privileges: Privileges) => privileges.admin,
+    check: (privileges: Privileges) =>
+      privileges.checkIntegrity() && privileges.admin,
   },
 } satisfies Record<string, Permission | ((...args: any[]) => Permission)>;
 export type Permission = {

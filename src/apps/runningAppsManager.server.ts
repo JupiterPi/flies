@@ -1,13 +1,12 @@
 import z from "zod";
 import { type App } from "./apps";
 import { Store } from "#/server/stores/stores.server";
-import { env } from "#/env";
 import { os } from "@orpc/server";
 import { openapi } from "@orpc/openapi";
 import { instantiateApp } from "./appsRegistry";
 import { assertPermission, auth } from "#/server/auth.server";
-import { permissions } from "#/server/permissions";
-import { joinPath } from "#/utils";
+import { permissions, Privileges } from "#/server/permissions";
+import { runningAppsFile, vfs } from "#/server/vfs.server";
 
 const runningApps = new Map<string, [App, AbortController]>();
 // @ts-ignore
@@ -26,7 +25,7 @@ globalThis.__runningAppsManagerTeardown = () => {
 // long-running server handles otherwise continuing to run in the background
 
 const appFileStore = await Store.fromFile(
-  Bun.file(`${env.paths.data}/runningApps.json`),
+  runningAppsFile,
   z.object({
     appFilePaths: z.array(z.string()).default([]),
   }),
@@ -41,8 +40,7 @@ export async function runSavedApps() {
   const appFilePaths = appFileStore.read().appFilePaths;
   console.log("Running saved apps:", appFilePaths);
   for (const filePath of appFilePaths) {
-    const file = Bun.file(env.paths.fs + "/" + joinPath(filePath));
-    if (!(await file.exists())) {
+    if (!(await vfs.exists(Privileges.PRIVILEGES_all(), filePath))) {
       console.warn(`App file ${filePath} does not exist anymore.`);
       continue;
     }
