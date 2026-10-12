@@ -12,6 +12,7 @@ RUN bun run build
 
 FROM base AS release
 COPY --from=install /usr/src/app/.output /usr/src/app/.output
+COPY --from=install /usr/src/app/node_modules/@ff-labs /usr/src/app/node_modules/@ff-labs
 EXPOSE 3000/tcp
 ENV DATA_DIR=/data
 ENTRYPOINT ["bun", "run", ".output/server/index.mjs"]
