@@ -2,7 +2,7 @@ import type { router } from "#/server/api/index.server";
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
 import type { RouterClient } from "@orpc/server";
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useMemo, useState } from "react";
 import { useClientConfig } from "./clientConfig";
 import { createTanstackQueryUtils } from "@orpc/tanstack-query";
 import { RetryLinkPlugin } from "@orpc/client/plugins";
@@ -13,6 +13,7 @@ import { Input } from "#/components/ui/input";
 import { Button } from "#/components/ui/button";
 
 export const ORPCClientContext = createContext<{
+  isSessionCookieReady: boolean;
   client: RouterClient<router>;
 } | null>(null);
 
@@ -34,6 +35,7 @@ export function ORPCClientProvider({
     ].filter((c) => c !== undefined);
   }, [clientConfig]);
 
+  const [isSessionCookieReady, setIsSessionCookieReady] = useState(false);
   const client: RouterClient<typeof router> = useMemo(() => {
     const link = new RPCLink({
       origin: `${window.location.origin}/api`,
@@ -53,17 +55,22 @@ export function ORPCClientProvider({
       },
       plugins: [new RetryLinkPlugin()],
     });
-    return createORPCClient(link);
-  }, [clientConfig]);
+    const client: RouterClient<typeof router> = createORPCClient(link);
 
-  // create a session on the server every time the credentials change
-  // the call returns the session cookie automatically stored by the browser
-  useEffect(() => {
-    client.user.createSession();
-  }, [effectiveCredentials]);
+    // create a session on the server every time the credentials change
+    // the call returns the session cookie automatically stored by the browser
+    if (effectiveCredentials.length > 0) {
+      setIsSessionCookieReady(false);
+      client.user.createSession().then(() => {
+        setIsSessionCookieReady(true);
+      });
+    }
+
+    return client;
+  }, [clientConfig, effectiveCredentials]);
 
   return (
-    <ORPCClientContext.Provider value={{ client }}>
+    <ORPCClientContext.Provider value={{ client, isSessionCookieReady }}>
       {children}
     </ORPCClientContext.Provider>
   );
@@ -93,6 +100,16 @@ export function useServer() {
     queries: createTanstackQueryUtils(client.client),
     fs: new ServerFS(client.client),
   };
+}
+
+export function useIsSessionCookieReady() {
+  const client = useContext(ORPCClientContext);
+  if (!client) {
+    throw new Error(
+      "useIsSessionCookieReady must be used within a ORPCClientContext provider",
+    );
+  }
+  return client.isSessionCookieReady;
 }
 
 // login

@@ -7,6 +7,7 @@ import {
   LoginPage,
   useAuthInvalidationKey,
   useIsLoggedInAsUser,
+  useIsSessionCookieReady,
   useServer,
 } from "#/client/orpc";
 import PathBreadcrumbs from "./-PathBreadcrumbs";
@@ -23,6 +24,7 @@ export const Route = createFileRoute("/$")({
 
 function RouteComponent() {
   const { client, fs } = useServer();
+  const isSessionCookieReady = useIsSessionCookieReady();
   const path = Route.useParams()._splat!;
 
   const authInvalidationKey = useAuthInvalidationKey();
@@ -92,7 +94,14 @@ function RouteComponent() {
 
     // if no app is found, open the raw file
     // reloading the page causes server.ts to run instead of the app router, which will serve the raw file
-    window.location.href = window.location.href;
+    if (isSessionCookieReady) {
+      window.location.href = window.location.href;
+    } else {
+      console.warn(
+        "Session cookie is not ready yet, cannot reload the page to serve the raw file",
+      );
+      // todo: tidy this up
+    }
   } else {
     return <DirectoryViewer PathBreadcrumbs={_PathBreadcrumbs} path={path} />;
   }
