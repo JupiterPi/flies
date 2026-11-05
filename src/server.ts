@@ -54,6 +54,13 @@ async function routeRawFileRequest(request: Request) {
         if (!permissions.read(filePath).check(auth.privileges)) {
           // when no session cookie is detected, returns the app with the
           // login prompt, which will retry the request once a session cookie is obtained
+          console.log("No read permission for:", filePath);
+          console.log("Privileges:", JSON.stringify(auth.privileges, null, 2));
+          console.log({
+            authHeader: request.headers.get("Authorization"),
+            cookieHeader: request.headers.get("Cookie"),
+            shareQueryParam: url.searchParams.get("share"),
+          });
           break; // so the framework picks up again and serves the app
         }
         if (await vfs.exists(auth.privileges, filePath)) {
