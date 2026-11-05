@@ -199,7 +199,7 @@ function SharesDialog({
                     <DropdownMenuItem
                       onClick={() => {
                         navigator.clipboard.writeText(
-                          `${window.location.origin}/${share.path}?share=${share.token}`,
+                          `${window.location.origin}/${share.path}${share.token ? `?share=${share.token}` : ""}`,
                         );
                         toast.add({ type: "success", title: "Link copied" });
                       }}
