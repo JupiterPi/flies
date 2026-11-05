@@ -16,6 +16,9 @@ import { createClientOnlyFn } from "@tanstack/react-start";
 export const Route = createFileRoute("/$")({
   ssr: false,
   component: createClientOnlyFn(RouteComponent),
+  head: (loaderData) => ({
+    meta: [{ title: `${loaderData.params._splat} - Flies` }],
+  }),
 });
 
 function RouteComponent() {
