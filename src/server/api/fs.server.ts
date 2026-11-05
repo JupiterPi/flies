@@ -110,20 +110,9 @@ export const fsRoutes = os.meta(openapi({ prefix: "/fs" })).router({
       z.object({
         query: z.string(),
         type: z.enum(["file", "directory", "any"]).optional(),
-        pageSize: z.number().optional(),
-        pageIndex: z.number().optional(),
       }),
     )
     .handler(async ({ context, input }) => {
-      if (!context.user && !(input.pageSize && input.pageSize < 500)) {
-        input.pageSize = 500;
-      }
-      return await vfs.search(
-        context.privileges,
-        input.query,
-        input.type,
-        input.pageSize,
-        input.pageIndex,
-      );
+      return await vfs.search(context.privileges, input.query);
     }),
 });
