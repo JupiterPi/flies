@@ -75,8 +75,6 @@ function RouteComponent() {
   }
 
   if (remoteItem.data.type === "file") {
-    const downloadLink = remoteItem.data.downloadLink;
-
     // resolve associated app
     const app = runOrGetApp(path);
     if (app) {
@@ -90,7 +88,8 @@ function RouteComponent() {
     }
 
     // if no app is found, open the raw file
-    window.open(downloadLink, "_blank");
+    // reloading the page causes server.ts to run instead of the app router, which will serve the raw file
+    window.location.href = window.location.href;
   } else {
     return <DirectoryViewer PathBreadcrumbs={_PathBreadcrumbs} path={path} />;
   }

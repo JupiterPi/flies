@@ -2,7 +2,7 @@ import type { router } from "#/server/api/index.server";
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
 import type { RouterClient } from "@orpc/server";
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { useClientConfig } from "./clientConfig";
 import { createTanstackQueryUtils } from "@orpc/tanstack-query";
 import { RetryLinkPlugin } from "@orpc/client/plugins";
@@ -23,6 +23,17 @@ export function ORPCClientProvider({
 }) {
   const [clientConfig, _] = useClientConfig();
 
+  const effectiveCredentials = useMemo(() => {
+    return [
+      clientConfig.savedUserCredentials,
+      // share tokens are passed simply as username "share" credentials
+      ...clientConfig.savedShareTokens.map((token) => ({
+        username: "share",
+        password: token,
+      })),
+    ].filter((c) => c !== undefined);
+  }, [clientConfig]);
+
   const client: RouterClient<typeof router> = useMemo(() => {
     const link = new RPCLink({
       origin: `${window.location.origin}/api`,
@@ -30,18 +41,10 @@ export function ORPCClientProvider({
       headers: () => {
         return {
           authorization:
-            clientConfig.savedUserCredentials ||
-            clientConfig.savedShareTokens.length > 0
+            effectiveCredentials.length > 0
               ? "Basic " +
                 btoa(
-                  [
-                    clientConfig.savedUserCredentials,
-                    ...clientConfig.savedShareTokens.map((token) => ({
-                      username: "share",
-                      password: token,
-                    })),
-                  ]
-                    .filter((c) => c !== undefined)
+                  effectiveCredentials
                     .map((c) => `${c.username}:${c.password}`)
                     .join(","),
                 )
@@ -52,6 +55,12 @@ export function ORPCClientProvider({
     });
     return createORPCClient(link);
   }, [clientConfig]);
+
+  // create a session on the server every time the credentials change
+  // the call returns the session cookie automatically stored by the browser
+  useEffect(() => {
+    client.user.createSession();
+  }, [effectiveCredentials]);
 
   return (
     <ORPCClientContext.Provider value={{ client }}>
@@ -230,7 +239,7 @@ export interface RemoteFileSystem {
   getFileOrDirectoryInfo(
     path: string,
   ): Promise<
-    | { type: "file"; downloadLink: string; readonly: boolean }
+    | { type: "file"; readonly: boolean }
     | { type: "directory"; readonly: boolean }
     | { type: "not_authenticated" | "not_found" }
   >;
@@ -266,7 +275,6 @@ export class ServerFS implements RemoteFileSystem {
     if (info.type === "file") {
       return {
         type: "file" as const,
-        downloadLink: this.getFileDownloadLink(path),
         readonly: info.readonly,
       };
     } else if (info.type === "directory") {
@@ -307,8 +315,9 @@ export class ServerFS implements RemoteFileSystem {
   }
 
   getFileDownloadLink(path: string) {
-    this.server.fs.downloadFile; // ensure that the downloadFile route is registered
-    return `${window.location.origin}/api/fs/download/${encodeURIComponent(path)}`;
+    //this.server.fs.downloadFile; // ensure that the downloadFile route is registered
+    //return `${window.location.origin}/api/fs/download/${encodeURIComponent(path)}`;
+    return `${window.location.origin}/${path}?raw`;
   }
 
   async writeFile(path: string, content: ArrayBuffer | string) {

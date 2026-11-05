@@ -52,15 +52,10 @@ async function routeRawFileRequest(request: Request) {
           return new Response(auth.error, { status: 401 });
         }
         if (!permissions.read(filePath).check(auth.privileges)) {
-          return new Response(
-            "You do not have permission to read " + filePath,
-            {
-              status: 403,
-            },
-          );
+          // when no session cookie is detected, returns the app with the
+          // login prompt, which will retry the request once a session cookie is obtained
+          break; // so the framework picks up again and serves the app
         }
-        // todo: when no session cookie is detected, instead of failing, it would be nice to instead
-        // return the app with a login prompt, and then it would retry the request with the session cookie
         if (await vfs.exists(auth.privileges, filePath)) {
           return new Response(
             await vfs.downloadFile(auth.privileges, filePath),

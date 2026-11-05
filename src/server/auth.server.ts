@@ -18,7 +18,7 @@ import { env } from "#/env";
 
 const sessions = new Map<
   string,
-  { sessionStart: Date; user: User; privileges: Privileges }
+  { sessionStart: Date; user: User | undefined; privileges: Privileges }
 >();
 
 export const sessionTimeoutMs = 1000 * 60 * 60 * 24; // 24 hours
@@ -33,12 +33,12 @@ function getSession(sessionId: string) {
   return session;
 }
 
-export function createSession(user: User) {
+export function createSession(user: User | undefined, privileges: Privileges) {
   const sessionId = crypto.randomUUID();
   sessions.set(sessionId, {
     sessionStart: new Date(),
     user,
-    privileges: Privileges.PRIVILEGES_forUser(user),
+    privileges,
   });
   return sessionId;
 }
@@ -203,9 +203,8 @@ export const userRoutes = os.meta(openapi({ prefix: "/user" })).router({
     .route({ method: "POST", path: "/create-session" })
     .$context<ServerContext>()
     .use(auth())
-    .use(requireUser)
     .handler(({ context }) => {
-      const sessionId = createSession(context.user);
+      const sessionId = createSession(context.user, context.privileges);
       setCookie(context.resHeaders, "sessionId", sessionId, {
         maxAge: sessionTimeoutMs / 1000,
         httpOnly: true,
